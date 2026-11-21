@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduScore — Tra cứu kết quả học tập | Trường THCS Nguyễn Thái Bình</title>
+
+<!-- Cấu hình xem trước khi chia sẻ link qua Zalo/Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="EduScore — Tra cứu kết quả học tập | Trường THCS Nguyễn Thái Bình">
+<meta property="og:description" content="Hệ thống tra cứu kết quả học tập trực tuyến. Nhập mã định danh Bộ GD&ĐT để xem điểm.">
+<meta property="og:url" content="https://minhduc15032000-ship-it.github.io/EduScore-MinhDuc/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --blue-900:#172554; --blue-800:#1e3a8a; --blue-700:#1d4ed8; --blue-600:#2563eb;
+  --blue-500:#3b82f6; --blue-100:#dbeafe; --blue-50:#eff6ff;
+  --slate-900:#0f172a; --slate-700:#334155; --slate-600:#475569; --slate-500:#64748b;
+  --slate-400:#94a3b8; --slate-200:#e2e8f0; --slate-100:#f1f5f9; --slate-50:#f8fafc;
+  --green-600:#16a34a; --green-50:#f0fdf4; --green-100:#dcfce7; --green-700:#15803d;
+  --amber-600:#d97706; --amber-50:#fffbeb; --amber-100:#fef3c7;
+  --red-600:#dc2626;   --red-50:#fef2f2;   --red-100:#fee2e2;
+  --violet-600:#7c3aed;--violet-50:#f5f3ff;--violet-100:#ede9fe;
+  --radius:16px; --radius-sm:10px;
+  --shadow-card:0 1px 3px rgba(15,23,42,.08),0 8px 24px -8px rgba(15,23,42,.12);
+  --shadow-pop:0 4px 12px rgba(15,23,42,.10),0 20px 40px -12px rgba(15,23,42,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Be Vietnam Pro','Segoe UI',Tahoma,Verdana,sans-serif;
+  background:var(--slate-100);color:var(--slate-900);
+  line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh;
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ============ NÚT QUẢN TRỊ ============ */
+.admin-fab{
+  position:fixed;top:14px;right:14px;z-index:50;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s, transform .15s;
+  backdrop-filter:blur(4px);text-decoration:none;
+}
+.admin-fab:hover{background:rgba(255,255,255,.3);transform:rotate(30deg)}
+.admin-fab svg{width:20px;height:20px}
+
+/* ============ HEADER ============ */
+.hero{
+  position:relative;color:#fff;overflow:hidden;
+  background:linear-gradient(135deg,var(--blue-900) 0%,var(--blue-800) 45%,var(--blue-700) 100%);
+  padding:34px 16px 86px;
+}
+.hero::before{
+  content:"";position:absolute;inset:0;opacity:.35;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+.hero::after{
+  content:"";position:absolute;left:-10%;right:-10%;bottom:-70px;height:120px;
+  background:var(--slate-100);border-radius:50% 50% 0 0;pointer-events:none;
+}
+.hero-inner{position:relative;max-width:860px;margin:0 auto;text-align:center}
+.crest{
+  width:64px;height:64px;border-radius:50%;margin:0 auto 14px;
+  background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.45);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:20px;letter-spacing:.5px;backdrop-filter:blur(4px);
+}
+.hero h1{font-size:clamp(20px,4.5vw,28px);font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.hero .subtitle{
+  display:inline-block;margin-top:10px;padding:6px 16px;border-radius:999px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);
+  font-size:14px;font-weight:500;
+}
+.hero .note{margin-top:10px;font-size:12.5px;color:rgba(255,255,255,.75)}
+
+/* ============ KHUNG TÌM KIẾM ============ */
+.search-wrap{max-width:860px;margin:-52px auto 0;padding:0 16px;position:relative;z-index:2}
+.search-card{
+  background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-pop);
+  padding:20px;border:1px solid var(--slate-200);
+}
+.search-label{font-size:14px;font-weight:600;color:var(--slate-700);margin-bottom:8px;display:block}
+.search-row{display:flex;flex-direction:column;gap:10px}
+.input-shell{
+  display:flex;align-items:center;gap:10px;background:var(--slate-50);
+  border:2px solid var(--slate-200);border-radius:12px;padding:0 14px;
+  transition:border-color .15s, box-shadow .15s;
+}
+.input-shell:focus-within{border-color:var(--blue-500);background:#fff;box-shadow:0 0 0 4px rgba(59,130,246,.15)}
+.input-shell svg{flex:none;width:20px;height:20px;color:var(--slate-400)}
+#searchInput{
+  flex:1;border:none;outline:none;background:transparent;
+  padding:14px 0;font-size:16px;font-family:inherit;color:var(--slate-900);min-width:0;
+}
+#searchInput::placeholder{color:var(--slate-400)}
+#searchBtn{
+  padding:14px 26px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(135deg,var(--blue-600),var(--blue-700));
+  color:#fff;font-size:15px;font-weight:700;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .1s, box-shadow .15s, filter .15s;
+  box-shadow:0 4px 14px -4px rgba(37,99,235,.5);
+}
+#searchBtn:hover{filter:brightness(1.07)}
+#searchBtn:active{transform:translateY(1px)}
+#searchBtn:disabled{opacity:.7;cursor:not-allowed;transform:none}
+#searchBtn svg{width:18px;height:18px}
+.search-hint{margin-top:10px;font-size:12.5px;color:var(--slate-500);text-align:center}
+.demo-chip{
+  display:none;margin:0 auto 10px;width:fit-content;padding:4px 12px;border-radius:999px;
+  background:var(--amber-100);color:var(--amber-600);font-size:12px;font-weight:600;
+  border:1px dashed var(--amber-600);
+}
+
+/* ============ TRẠNG THÁI ============ */
+.container{max-width:860px;margin:0 auto;padding:0 16px}
+.status-card{
+  display:none;margin-top:18px;padding:16px 18px;border-radius:var(--radius);
+  font-size:14.5px;font-weight:600;align-items:flex-start;gap:10px;
+}
+.status-card.show{display:flex}
+.status-card .icon{flex:none;width:22px;height:22px}
+.status-error{background:var(--red-50);border:1px solid #fecaca;color:var(--red-600)}
+.status-warn{background:var(--amber-50);border:1px solid #fde68a;color:#b45309}
+.status-loading{background:var(--blue-50);border:1px solid var(--blue-100);color:var(--blue-800)}
+.spinner{
+  flex:none;width:20px;height:20px;border-radius:50%;
+  border:3px solid var(--blue-100);border-top-color:var(--blue-600);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ KẾT QUẢ ============ */
+#result{display:none;margin-top:22px}
+.profile-card{
+  background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-card);
+  border:1px solid var(--slate-200);padding:20px;position:relative;overflow:hidden;
+}
+.profile-card::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,var(--blue-600),var(--blue-400),var(--blue-600));
+}
+.profile-top{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.avatar{
+  flex:none;width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue-500),var(--blue-700));
+  color:#fff;font-weight:800;font-size:21px;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.5px;
+}
+.profile-name{font-size:19px;font-weight:800;color:var(--blue-900);line-height:1.3}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;
+  font-size:12.5px;font-weight:600;background:var(--slate-100);color:var(--slate-600);
+  border:1px solid var(--slate-200);
+}
+.badge.blue{background:var(--blue-50);color:var(--blue-700);border-color:var(--blue-100)}
+.profile-meta{
+  margin-top:14px;padding-top:12px;border-top:1px dashed var(--slate-200);
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;
+}
+.updated-chip{font-size:12px;color:var(--slate-500);display:inline-flex;align-items:center;gap:6px}
+.updated-chip svg{width:13px;height:13px}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.stat-box{
+  background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius-sm);
+  padding:12px 8px;text-align:center;box-shadow:var(--shadow-card);
+}
+.stat-num{font-size:22px;font-weight:800;line-height:1.15}
+.stat-label{font-size:11.5px;color:var(--slate-500);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.stat-box.g .stat-num{color:var(--green-600)}
+.stat-box.b .stat-num{color:var(--blue-700)}
+.stat-box.v .stat-num{color:var(--violet-600)}
+
+.section-title{
+  margin:26px 2px 12px;font-size:15px;font-weight:700;color:var(--slate-700);
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::after{content:"";flex:1;height:1px;background:var(--slate-200)}
+.subject-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.subject-card{
+  background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius);
+  box-shadow:var(--shadow-card);overflow:hidden;transition:transform .15s, box-shadow .15s;
+}
+.subject-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-pop)}
+.subject-head{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  background:linear-gradient(to right,var(--blue-50),#fff);
+  border-bottom:1px solid var(--slate-200);
+}
+.subject-emoji{
+  flex:none;width:36px;height:36px;border-radius:10px;background:var(--blue-100);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.subject-name{flex:1;font-weight:700;font-size:14.5px;color:var(--slate-900);min-width:0}
+.subject-avg{
+  flex:none;font-size:12.5px;font-weight:800;padding:4px 11px;border-radius:999px;
+  background:var(--blue-100);color:var(--blue-800);
+}
+.subject-avg.g{background:var(--green-100);color:var(--green-700)}
+.subject-avg.a{background:var(--amber-100);color:var(--amber-600)}
+.subject-avg.r{background:var(--red-100);color:var(--red-600)}
+.score-list{padding:6px 14px 10px}
+.score-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:7.5px 0;border-bottom:1px dashed var(--slate-200);font-size:13.5px;
+}
+.score-row:last-child{border-bottom:none}
+.score-kind{color:var(--slate-600);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-val{
+  flex:none;min-width:46px;text-align:center;padding:3px 10px;border-radius:8px;
+  font-weight:800;font-size:13.5px;
+}
+.score-val.g{background:var(--green-100);color:var(--green-700)}
+.score-val.b{background:var(--blue-100);color:var(--blue-700)}
+.score-val.a{background:var(--amber-100);color:var(--amber-600)}
+.score-val.r{background:var(--red-100);color:var(--red-600)}
+.score-val.n{background:var(--slate-100);color:var(--slate-600)}
+.score-val.official{
+  outline:2px solid currentColor;outline-offset:-2px;
+}
+.score-row.official .score-kind{font-weight:700;color:var(--slate-900)}
+
+.actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.btn{
+  flex:1;min-width:150px;padding:13px 18px;border-radius:12px;border:none;cursor:pointer;
+  font-family:inherit;font-size:14.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:filter .15s, transform .1s;
+}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:linear-gradient(135deg,var(--blue-600),var(--blue-700));color:#fff;box-shadow:0 4px 14px -4px rgba(37,99,235,.5)}
+.btn-outline{background:#fff;color:var(--blue-700);border:2px solid var(--blue-500)}
+.btn:hover{filter:brightness(1.06)}
+.btn svg{width:17px;height:17px}
+
+/* ============ FOOTER ============ */
+footer{
+  margin-top:44px;padding:22px 16px 30px;text-align:center;
+  background:#fff;border-top:1px solid var(--slate-200);
+}
+footer .school{font-size:13.5px;font-weight:700;color:var(--blue-900);text-transform:uppercase;letter-spacing:.3px}
+footer .line{font-size:12px;color:var(--slate-500);margin-top:5px}
+footer .disclaimer{font-size:11.5px;color:var(--slate-400);margin-top:10px;font-style:italic}
+
+/* ============ IN ẤN ============ */
+@media print{
+  body{background:#fff}
+  .hero,.search-wrap,.actions,footer,.status-card{display:none!important}
+  .container{max-width:100%;padding:0}
+  #result{display:block!important;margin-top:0}
+  .subject-card,.profile-card,.stat-box{box-shadow:none;break-inside:avoid}
+  .subject-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* ============ MÀN HÌNH LỚN ============ */
+@media (min-width:600px){
+  .hero{padding:44px 16px 92px}
+  .search-row{flex-direction:row}
+  .search-row .input-shell{flex:1}
+  #searchBtn{min-width:160px}
+}
+</style>
+</head>
+<body>
+
+<!-- Nút vào trang quản trị (dành cho admin trường) -->
+<a class="admin-fab" href="admin.html" title="Trang quản trị (dành cho admin)" aria-label="Trang quản trị">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+</a>
+
+<!-- ================= TIÊU ĐỀ ================= -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="crest">NTB</div>
+    <h1 id="schoolName">Trường THCS Nguyễn Thái Bình</h1>
+    <div class="subtitle">📚 Cổng tra cứu kết quả học tập</div>
+    <p class="note">Nhập mã định danh do Bộ GD&amp;ĐT cấp để xem kết quả học tập của học sinh</p>
+  </div>
+</header>
+
+<!-- ================= TÌM KIẾM ================= -->
+<div class="search-wrap">
+  <div class="search-card">
+    <div class="demo-chip" id="demoChip">Chế độ demo đang bật — hiển thị dữ liệu mẫu, chưa kết nối dữ liệu thật (xem HUONG-DAN-MOI.md để tắt)</div>
+    <label class="search-label" for="searchInput">Mã định danh học sinh</label>
+    <div class="search-row">
+      <div class="input-shell">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <input id="searchInput" type="text" inputmode="numeric" autocomplete="off"
+               enterkeyhint="search" placeholder="Ví dụ: 032012345678" maxlength="20">
+      </div>
+      <button id="searchBtn" onclick="performSearch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        Tra cứu
+      </button>
+    </div>
+    <p class="search-hint">Mã định danh gồm các chữ số do giáo viên chủ nhiệm cung cấp • Mọi thắc mắc liên hệ GVCN hoặc văn phòng trường</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="status-card" id="statusCard"></div>
+
+  <!-- ================= KẾT QUẢ ================= -->
+  <div id="result">
+    <div class="profile-card">
+      <div class="profile-top">
+        <div class="avatar" id="avatar">HS</div>
+        <div style="min-width:0">
+          <div class="profile-name" id="studentName">—</div>
+          <div class="badges" id="badges"></div>
+        </div>
+      </div>
+      <div class="profile-meta">
+        <span class="updated-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span id="updatedText">Dữ liệu học kỳ —</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box b"><div class="stat-num" id="statSubjects">0</div><div class="stat-label">Môn có điểm</div></div>
+      <div class="stat-box g"><div class="stat-num" id="statAvg">—</div><div class="stat-label">Điểm TB chung (ước tính)</div></div>
+      <div class="stat-box v"><div class="stat-num" id="statTerm">—</div><div class="stat-label">Học kỳ</div></div>
+    </div>
+
+    <div class="section-title">📖 Kết quả các môn học</div>
+    <div class="subject-grid" id="subjectGrid"></div>
+
+    <div class="actions">
+      <button class="btn btn-outline" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        In kết quả
+      </button>
+      <button class="btn btn-primary" onclick="resetToSearch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        Tra cứu học sinh khác
+      </button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="school">Trường THCS Nguyễn Thái Bình</div>
+  <div class="line">Nguồn dữ liệu: SMIS — Nền tảng số Quản trị Giáo dục Quốc gia (Bộ GD&amp;ĐT)</div>
+  <div class="line">Hệ thống tra cứu phi lợi nhuận — Miễn phí và không thương mại</div>
+  <div class="disclaimer">Điểm hiển thị mang tính tham khảo. Kết quả chính thức được xác nhận theo sổ điểm do GVCN và nhà trường công bố.</div>
+</footer>
+
+<script>
+/* ==================================================================
+   CẤU HÌNH — CHỈNH SỬA DUY NHẤT Ở ĐÂY
+   ================================================================== */
+const CONFIG = {
+  // URL Web App Apps Script (đã cấu hình)
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwQPRETDGgYf_w8I8xS5-2xa-AloZpgqDMSxE9tvPHIy4Hlu02lk4_NykwvucCfCspn/exec",
+
+  SCHOOL_NAME: "Trường THCS Nguyễn Thái Bình",
+  HOC_KY_LABEL: "Học kỳ 1 — Năm học 2026-2027", // nhãn học kỳ hiện tại (sẽ được nạp từ hệ thống nếu admin đã đặt)
+};
+
+/* ---------------- Tiện ích chung ---------------- */
+const $ = (id) => document.getElementById(id);
+
+function esc(s){ // chống chèn mã (XSS) với mọi dữ liệu trả về
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- Trạng thái ---------------- */
+function showStatus(type, html){
+  const card = $('statusCard');
+  const icons = {
+    error:  '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    warn:   '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    loading:''
+  };
+  card.className = 'status-card show ' + (type==='loading' ? 'status-loading' : type==='error' ? 'status-error' : 'status-warn');
+  card.innerHTML = (type==='loading' ? '<div class="spinner"></div>' : icons[type]||'') + '<div>' + html + '</div>';
+}
+function hideStatus(){ $('statusCard').className='status-card'; $('statusCard').innerHTML=''; }
+
+/* ---------------- Phân loại & màu điểm ---------------- */
+function classifyScore(raw){
+  const s = String(raw ?? '').trim();
+  if (s === '') return null;
+  const n = parseFloat(s.replace(',', '.'));
+  if (isNaN(n)){ // giá trị nhận xét: Đạt / Chưa đạt / G / K...
+    const up = s.toUpperCase();
+    if (up === 'Đ' || up === 'ĐẠT' || up === 'CĐ') return {cls:'n', label:s, officialish:true};
+    return {cls:'n', label:s};
+  }
+  let cls = 'r';
+  if (n >= 8) cls = 'g'; else if (n >= 6.5) cls = 'b'; else if (n >= 5) cls = 'a';
+  return {cls, label: s, num:n};
+}
+
+// Nhận diện loại điểm theo tên (thông tư 22)
+function kindOf(loaiDiem){
+  const s = String(loaiDiem).toLowerCase();
+  if (/tb|trung bình/.test(s)) return 'TB';
+  if (/cuối kỳ|cuối kì|ck\b|thi cuối/.test(s)) return 'CK';
+  if (/giữa kỳ|giữa kì|gk\b|thi giữa/.test(s)) return 'GK';
+  return 'TX';
+}
+
+// TB môn ước tính theo TT22: (ΣTX + GK + 2×CK) / (số TX + 3)
+function estimateSubjectAvg(items){
+  const tx=[], gk=[], ck=[]; let official = null;
+  items.forEach(it => {
+    const c = classifyScore(it.diemSo);
+    if (!c) return;
+    const k = kindOf(it.loaiDiem);
+    if (k === 'TB' && c.num !== undefined) official = c.num;
+    else if (k === 'CK' && c.num !== undefined) ck.push(c.num);
+    else if (k === 'GK' && c.num !== undefined) gk.push(c.num);
+    else if (c.num !== undefined) tx.push(c.num);
+  });
+  if (official !== null) return {value:official, official:true};
+  if (ck.length){ // có thi cuối kỳ → công thức đầy đủ
+    const g = gk[0] ?? null;
+    const sum = tx.reduce((a,b)=>a+b,0) + (g ?? 0) + 2*ck[ck.length-1];
+    const div = tx.length + 1 + 2;
+    if (g === null){ // thiếu GK: chỉ tính những gì có
+      const s2 = tx.reduce((a,b)=>a+b,0) + 2*ck[ck.length-1];
+      return {value: s2/(tx.length+2), official:false};
+    }
+    return {value: sum/div, official:false};
+  }
+  const all = [...tx, ...gk];
+  if (!all.length) return null;
+  return {value: all.reduce((a,b)=>a+b,0)/all.length, official:false};
+}
+
+const SUBJECT_EMOJI = {
+  'toán':'∑','ngữ văn':'📖','ngoại ngữ':'🌍','tiếng anh':'🌍','lịch sử và địa lí':'🗺️',
+  'khoa học tự nhiên':'🔬','tin học':'💻','công nghệ':'⚙️','giáo dục công dân':'🤝',
+  'giáo dục thể chất':'⚽','nghệ thuật':'🎨','hoạt động trải nghiệm':'🌱','giáo dục địa phương':'🏡',
+  'vật lí':'🧲','hoá học':'⚗️','hóa học':'⚗️','sinh học':'🧬','lịch sử':'📜','địa lí':'🌏',
+};
+function subjectEmoji(name){
+  const key = String(name).toLowerCase().trim();
+  for (const k in SUBJECT_EMOJI) if (key.includes(k)) return SUBJECT_EMOJI[k];
+  return '📘';
+}
+
+/* ---------------- Hiển thị kết quả ---------------- */
+function renderResult(payload){
+  const profile = payload.data.profile || {};
+  const subjects = payload.data.subjects || {};
+
+  // 1) Thẻ hồ sơ
+  const ten = profile['Họ và tên'] || profile['Họ tên'] || profile['Tên học sinh'] || 'Học sinh';
+  $('studentName').textContent = ten;
+  const initials = ten.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  $('avatar').textContent = initials || 'HS';
+
+  const badges = [];
+  if (profile['Lớp']) badges.push(['🎓', profile['Lớp'], 'blue']);
+  if (profile['Ngày sinh']) badges.push(['🎂', profile['Ngày sinh']]);
+  if (profile['Mã định danh']) badges.push(['🆔', profile['Mã định danh']]);
+  if (profile['GVCN']) badges.push(['👩‍🏫', 'GVCN: '+profile['GVCN']]);
+  $('badges').innerHTML = badges.map(([i,t,cls]) =>
+    `<span class="badge ${cls||''}">${i} ${esc(t)}</span>`).join('');
+
+  $('updatedText').textContent = 'Dữ liệu: ' + (payload.capNhat || payload.hocKy || CONFIG.HOC_KY_LABEL);
+
+  // 2) Thống kê + lưới môn học
+  const grid = $('subjectGrid'); grid.innerHTML = '';
+  let nSubjects = 0; const avgs = [];
+
+  Object.keys(subjects).forEach(name => {
+    const items = (subjects[name]||[]).filter(it => it && String(it.diemSo??'').trim() !== '');
+    if (!items.length) return; // bỏ môn chưa có điểm
+    nSubjects++;
+
+    // TB môn
+    const est = estimateSubjectAvg(items);
+    if (est){ avgs.push(est.value); }
+    let avgChip = '';
+    if (est){
+      const c = classifyScore(est.value.toFixed(1));
+      avgChip = `<span class="subject-avg ${c.cls}" title="${est.official?'Theo sổ điểm SMIS':'Ước tính theo TT22'}">TB: ${est.value.toFixed(1)}</span>`;
+    }
+
+    const rows = items.map(it => {
+      const c = classifyScore(it.diemSo);
+      if (!c) return '';
+      const isTB = kindOf(it.loaiDiem) === 'TB';
+      return `<div class="score-row ${isTB?'official':''}">
+        <span class="score-kind">${isTB?'⭐ ':''}${esc(it.loaiDiem)}</span>
+        <span class="score-val ${c.cls} ${isTB?'official':''}">${esc(c.label)}</span>
+      </div>`;
+    }).join('');
+
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="subject-card">
+        <div class="subject-head">
+          <div class="subject-emoji">${subjectEmoji(name)}</div>
+          <div class="subject-name">${esc(name)}</div>
+          ${avgChip}
+        </div>
+        <div class="score-list">${rows}</div>
+      </div>`);
+  });
+
+  if (!nSubjects){
+    grid.innerHTML = `<div class="subject-card"><div class="score-list" style="padding:16px;color:var(--slate-500);text-align:center">Chưa có điểm nào được ghi nhận trong kỳ này.</div></div>`;
+  }
+
+  $('statSubjects').textContent = nSubjects;
+  $('statAvg').textContent = avgs.length ? (avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2) : '—';
+  $('statTerm').textContent = /2/.test(payload.hocKy||CONFIG.HOC_KY_LABEL) && /học kỳ 2|học kì 2/i.test(payload.hocKy||CONFIG.HOC_KY_LABEL) ? 'HK2' : 'HK1';
+
+  $('result').style.display = 'block';
+  hideStatus();
+  $('result').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ---------------- Luồng tra cứu ---------------- */
+let lastQuery = '';
+function performSearch(){
+  const input = $('searchInput');
+  const query = input.value.replace(/\s+/g,'');
+  if (!query){ showStatus('warn','Vui lòng nhập mã định danh để tra cứu!'); input.focus(); return; }
+  if (query.length < 8){ showStatus('warn','Mã định danh thường có 10–12 chữ số. Bạn vui lòng kiểm tra lại!'); input.focus(); return; }
+  if (query === lastQuery && $('result').style.display === 'block') return;
+
+  lastQuery = query;
+  $('result').style.display = 'none';
+  $('searchBtn').disabled = true;
+  showStatus('loading','Đang lấy bảng điểm từ hệ thống, vui lòng đợi vài giây…');
+
+  const finish = () => { $('searchBtn').disabled = false; };
+
+  fetchData(query)
+    .then(payload => {
+      finish();
+      if (payload.error){ showStatus('warn', esc(payload.error)); return; }
+      try{ renderResult(payload); }catch(e){ console.error(e); showStatus('error','Không hiển thị được dữ liệu. Vui lòng chụp màn hình báo lại cho trường.'); }
+    })
+    .catch(err => {
+      finish();
+      console.error(err);
+      showStatus('error','Không kết nối được máy chủ. Kiểm tra kết nối mạng và thử lại sau ít phút.');
+    });
+}
+
+function fetchData(id){
+  // Chưa cấu hình backend → chế độ demo với dữ liệu mẫu
+  if (!CONFIG.SCRIPT_URL){
+    return new Promise(resolve => setTimeout(() => resolve(DEMO_DATA(id)), 900));
+  }
+  return fetch(`${CONFIG.SCRIPT_URL}?id=${encodeURIComponent(id)}`)
+    .then(r => { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+}
+
+function resetToSearch(){
+  $('result').style.display = 'none';
+  $('searchInput').value = '';
+  lastQuery = '';
+  $('searchInput').focus();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------------- Dữ liệu mẫu (chế độ demo) ---------------- */
+function DEMO_DATA(id){
+  const mon = (arr) => arr.map(([loaiDiem, diemSo]) => ({loaiDiem, diemSo}));
+  return {
+    ok: true,
+    capNhat: 'Đồng bộ lúc 07:30 hôm nay — Học kỳ 1, năm học 2026-2027',
+    hocKy: 'Học kỳ 1 — Năm học 2026-2027',
+    data: {
+      profile: {
+        'Họ và tên': 'NGUYỄN MINH AN (dữ liệu mẫu)',
+        'Ngày sinh': '05/03/2012',
+        'Lớp': '8A1',
+        'Mã định danh': id,
+        'GVCN': 'Trần Thị B'
+      },
+      subjects: {
+        'Toán': mon([['Đánh giá thường xuyên 1','8.5'],['Đánh giá thường xuyên 2','9'],['Đánh giá thường xuyên 3','7.5'],['Giữa kỳ','8'],['Cuối kỳ','9']]),
+        'Ngữ văn': mon([['Đánh giá thường xuyên 1','7.5'],['Đánh giá thường xuyên 2','8'],['Giữa kỳ','7'],['Cuối kỳ','8.5']]),
+        'Ngoại ngữ': mon([['Đánh giá thường xuyên 1','9'],['Đánh giá thường xuyên 2','9.5'],['Giữa kỳ','9'],['Cuối kỳ','10']]),
+        'Lịch sử và Địa lí': mon([['Đánh giá thường xuyên 1','8'],['Giữa kỳ','7.5'],['Cuối kỳ','8']]),
+        'Khoa học tự nhiên': mon([['Đánh giá thường xuyên 1','7'],['Đánh giá thường xuyên 2','8.5'],['Giữa kỳ','7'],['Cuối kỳ','6.5']]),
+        'Tin học': mon([['Đánh giá thường xuyên 1','10'],['Đánh giá thường xuyên 2','9.5'],['Cuối kỳ','9']]),
+        'Công nghệ': mon([['Đánh giá thường xuyên 1','8'],['Cuối kỳ','8.5']]),
+        'Giáo dục công dân': mon([['Đánh giá thường xuyên 1','Đ'],['Đánh giá thường xuyên 2','Đ']]),
+        'Giáo dục thể chất': mon([['Đánh giá thường xuyên 1','Đ'],['Cuối kỳ','Đạt']]),
+        'Nghệ thuật': mon([['Đánh giá thường xuyên 1','8']]),
+        'Hoạt động trải nghiệm': mon([['Nhận xét định kỳ','Đ']]),
+      }
+    }
+  };
+}
+
+/* ---------------- Khởi động ---------------- */
+(function init(){
+  document.title = `EduScore — Tra cứu kết quả học tập | ${CONFIG.SCHOOL_NAME}`;
+  $('schoolName').textContent = CONFIG.SCHOOL_NAME;
+  document.querySelector('footer .school').textContent = CONFIG.SCHOOL_NAME;
+  if (!CONFIG.SCRIPT_URL) $('demoChip').style.display = 'block';
+  $('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') performSearch(); });
+  try { const last = localStorage.getItem('ntb_lastId'); if (last) $('searchInput').value = last; } catch(e){}
+  const obs = new MutationObserver(() => {
+    if ($('result').style.display === 'block')
+      try { localStorage.setItem('ntb_lastId', lastQuery); } catch(e){}
+  });
+  obs.observe($('result'), {attributes:true, attributeFilter:['style']});
+
+  // Tải cấu hình do admin đặt trên hệ thống (tên trường, học kỳ, ghi chú...)
+  // Nếu không tải được → giữ nguyên cấu hình mặc định trong file.
+  if (CONFIG.SCRIPT_URL){
+    fetch(`${CONFIG.SCRIPT_URL}?action=config`)
+      .then(r => r.json())
+      .then(cfg => {
+        if (!cfg || cfg.error) return;
+        const ten = cfg.tenTruong || CONFIG.SCHOOL_NAME;
+        document.title = `EduScore — Tra cứu kết quả học tập | ${ten}`;
+        $('schoolName').textContent = ten;
+        document.querySelector('footer .school').textContent = ten;
+        if (cfg.hocKy) CONFIG.HOC_KY_LABEL = cfg.hocKy;
+        if (cfg.ghiChu) document.querySelector('.search-hint').textContent = cfg.ghiChu;
+        if (cfg.phuDe) document.querySelector('.subtitle').textContent = '📚 ' + cfg.phuDe;
+      })
+      .catch(() => {}); // im lặng dùng cấu hình mặc định
+  }
+})();
+</script>
+</body>
+</html>

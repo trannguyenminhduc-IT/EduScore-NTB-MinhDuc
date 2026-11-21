@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduScore — Quản trị hệ thống | THCS Nguyễn Thái Bình</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Thư viện đọc file Excel (.xlsx) ngay trên trình duyệt; nếu không tải được vẫn đọc được CSV -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onerror="window.__khongXlsx=true"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" onerror="window.__khongJszip=true"></script>
+
+<style>
+:root{
+  --blue-900:#172554; --blue-800:#1e3a8a; --blue-700:#1d4ed8; --blue-600:#2563eb;
+  --blue-500:#3b82f6; --blue-100:#dbeafe; --blue-50:#eff6ff;
+  --slate-900:#0f172a; --slate-700:#334155; --slate-600:#475569; --slate-500:#64748b;
+  --slate-400:#94a3b8; --slate-200:#e2e8f0; --slate-100:#f1f5f9; --slate-50:#f8fafc;
+  --green-600:#16a34a; --green-100:#dcfce7; --green-50:#f0fdf4;
+  --amber-600:#d97706; --amber-100:#fef3c7; --amber-50:#fffbeb;
+  --red-600:#dc2626;   --red-100:#fee2e2;  --red-50:#fef2f2;
+  --radius:14px; --radius-sm:10px;
+  --shadow-card:0 1px 3px rgba(15,23,42,.08),0 8px 24px -8px rgba(15,23,42,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Be Vietnam Pro','Segoe UI',Tahoma,sans-serif;background:var(--slate-100);color:var(--slate-900);line-height:1.55;min-height:100vh}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+a{color:var(--blue-600);text-decoration:none;font-weight:600}
+
+/* ---------- THANH TRÊN ---------- */
+.topbar{
+  background:linear-gradient(135deg,var(--blue-900),var(--blue-700));color:#fff;
+  padding:16px 18px;position:relative;overflow:hidden;
+}
+.topbar::after{content:"";position:absolute;inset:0;opacity:.3;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);background-size:22px 22px}
+.topbar-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:relative;z-index:1}
+.topbar .crest{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
+.topbar .t{flex:1;min-width:180px}
+.topbar .t .ten{font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.3px}
+.topbar .t .mota{font-size:12px;color:rgba(255,255,255,.75)}
+.topbar .actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-mini{padding:8px 13px;border-radius:9px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-mini:hover{background:rgba(255,255,255,.22)}
+
+/* ---------- KHUNG CHUNG ---------- */
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 50px}
+.card{background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:18px;margin-top:16px}
+.card h2{font-size:15.5px;font-weight:800;color:var(--blue-900);display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.card .sub{font-size:12.5px;color:var(--slate-500);margin-bottom:14px}
+
+/* ---------- THÔNG BÁO ---------- */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:99;max-width:92vw;
+  padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 10px 30px rgba(15,23,42,.25);display:none;gap:8px;align-items:center}
+.toast.show{display:flex}
+.toast.ok{background:var(--green-600);color:#fff}
+.toast.err{background:var(--red-600);color:#fff}
+.toast.info{background:var(--blue-700);color:#fff}
+.banner{display:none;margin-top:14px;padding:11px 15px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;align-items:center;gap:8px}
+.banner.show{display:flex}
+.banner.warn{background:var(--amber-100);color:#92400e;border:1px solid #fde68a}
+
+/* ---------- THỐNG KÊ ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.stat{background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius-sm);box-shadow:var(--shadow-card);padding:13px 8px;text-align:center}
+.stat .n{font-size:24px;font-weight:800;color:var(--blue-700)}
+.stat .l{font-size:11px;color:var(--slate-500);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+/* ---------- NÚT ---------- */
+.btn{padding:11px 18px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px;transition:filter .15s,transform .1s}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--blue-600),var(--blue-700));color:#fff;box-shadow:0 4px 12px -4px rgba(37,99,235,.5)}
+.btn-danger{background:#fff;color:var(--red-600);border:2px solid var(--red-600)}
+.btn-ghost{background:var(--slate-100);color:var(--slate-700);border:1px solid var(--slate-200)}
+.btn:hover{filter:brightness(1.05)}
+.btn svg{width:16px;height:16px}
+
+/* ---------- BẢNG ---------- */
+.table-scroll{overflow-x:auto;border:1px solid var(--slate-200);border-radius:var(--radius-sm)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:860px;background:#fff}
+th{background:var(--blue-50);color:var(--blue-900);text-align:left;padding:10px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;border-bottom:1px solid var(--slate-200)}
+td{padding:9px 12px;border-bottom:1px solid var(--slate-100);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--slate-50)}
+.khoi-cell{font-weight:800;color:var(--blue-700);white-space:nowrap}
+.tabname{font-family:Consolas,monospace;font-size:12px;background:var(--slate-100);padding:2px 8px;border-radius:6px;white-space:nowrap}
+.muted{color:var(--slate-400);font-size:12px}
+.ok-chip{background:var(--green-100);color:var(--green-600);font-weight:700;padding:2px 9px;border-radius:999px;font-size:11.5px;white-space:nowrap}
+.row-btns{display:flex;gap:6px;white-space:nowrap}
+.icon-btn{border:1px solid var(--slate-200);background:#fff;border-radius:8px;padding:5px 9px;cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-600)}
+.icon-btn:hover{background:var(--slate-50)}
+.icon-btn.danger{color:var(--red-600);border-color:#fecaca}
+.icon-btn.danger:hover{background:var(--red-50)}
+
+/* ---------- FORM ---------- */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--slate-600);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--slate-200);border-radius:9px;font-family:inherit;font-size:13.5px;color:var(--slate-900);background:var(--slate-50)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue-500);background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.form-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.help{font-size:11.5px;color:var(--slate-400);margin-top:4px}
+
+/* ---------- ĐĂNG NHẬP ---------- */
+#loginView{max-width:420px;margin:8vh auto 0;padding:0 16px}
+.login-card{background:#fff;border:1px solid var(--slate-200);border-radius:18px;box-shadow:0 20px 50px -12px rgba(15,23,42,.25);padding:30px 26px;text-align:center}
+.login-card .lock{width:62px;height:62px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,var(--blue-600),var(--blue-800));display:flex;align-items:center;justify-content:center;color:#fff}
+.login-card .lock svg{width:28px;height:28px}
+.login-card h1{font-size:18px;color:var(--blue-900);margin-bottom:4px}
+.login-card p{font-size:13px;color:var(--slate-500);margin-bottom:18px}
+.login-card input{width:100%;padding:13px 15px;border:2px solid var(--slate-200);border-radius:11px;font-size:15px;font-family:inherit;text-align:center;letter-spacing:2px}
+.login-card input:focus{outline:none;border-color:var(--blue-500);box-shadow:0 0 0 4px rgba(59,130,246,.15)}
+.login-card .btn{width:100%;justify-content:center;margin-top:12px;padding:13px}
+.login-err{display:none;margin-top:10px;font-size:13px;font-weight:600;color:var(--red-600);background:var(--red-50);border:1px solid #fecaca;border-radius:9px;padding:9px}
+.login-err.show{display:block}
+.demo-chip{display:none;margin:0 auto 12px;width:fit-content;padding:4px 12px;border-radius:999px;background:var(--amber-100);color:var(--amber-600);font-size:12px;font-weight:600;border:1px dashed var(--amber-600)}
+
+/* ---------- NẠP DỮ LIỆU TỪ FILE ---------- */
+.file-zone{
+  border:2px dashed var(--slate-400);border-radius:var(--radius-sm);background:var(--slate-50);
+  padding:22px 16px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s;
+}
+.file-zone:hover{border-color:var(--blue-500);background:var(--blue-50)}
+.file-zone svg{width:34px;height:34px;color:var(--blue-600);margin-bottom:6px}
+.file-zone .t{font-weight:700;font-size:14px;color:var(--slate-700)}
+.file-zone .s{font-size:12px;color:var(--slate-500);margin-top:3px}
+.layout-row{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0}
+.layout-row label{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--slate-700);cursor:pointer}
+.map-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.map-grid .field select{font-size:13px}
+.preview-note{font-size:12px;color:var(--slate-500);margin:10px 0 6px;font-weight:600}
+table.preview{min-width:0;font-size:12px}
+table.preview th{padding:7px 9px;white-space:nowrap}
+table.preview td{padding:6px 9px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.che-do{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
+.che-do label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--slate-700);cursor:pointer}
+
+/* ---------- TIỆN ÍCH ---------- */
+.hidden{display:none!important}
+.spinner{width:16px;height:16px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .8s linear infinite;flex:none}
+.spinner.blue{border-color:var(--blue-100);border-top-color:var(--blue-600)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.sync-info{font-size:13px;color:var(--slate-600)}
+footer{text-align:center;padding:18px;font-size:11.5px;color:var(--slate-400)}
+@media (max-width:640px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .topbar .t .ten{font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= MÀN ĐĂNG NHẬP ================= -->
+<div id="loginView">
+  <div class="login-card">
+    <div class="demo-chip" id="demoChip">Chế độ demo — nhập mật khẩu bất kỳ để xem giao diện</div>
+    <div class="lock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    </div>
+    <h1>Quản trị hệ thống tra cứu</h1>
+    <p id="loginSchool">Trường THCS Nguyễn Thái Bình</p>
+    <input type="password" id="pwInput" placeholder="Mật khẩu quản trị" autocomplete="current-password">
+    <div class="login-err" id="loginErr"></div>
+    <button class="btn btn-primary" id="loginBtn" onclick="dangNhap()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+      Đăng nhập
+    </button>
+    <p style="margin-top:14px"><a href="index.html">← Về trang tra cứu</a></p>
+  </div>
+</div>
+
+<!-- ================= BẢNG ĐIỀU KHIỂN ================= -->
+<div id="adminView" class="hidden">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="crest">NTB</div>
+      <div class="t">
+        <div class="ten" id="topTenTruong">Trường THCS Nguyễn Thái Bình</div>
+        <div class="mota">Bảng điều khiển hệ thống tra cứu điểm — chế độ quản trị</div>
+      </div>
+      <div class="actions">
+        <a class="btn-mini" href="index.html">🔍 Trang tra cứu</a>
+        <a class="btn-mini" id="btnOpenSheet" href="#" target="_blank" rel="noopener">📊 Mở Sheet dữ liệu</a>
+        <button class="btn-mini" onclick="dangXuat()">Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="banner warn" id="bannerMacDinh">⚠️ Bạn đang dùng mật khẩu mặc định — hãy đổi mật khẩu ngay trong mục bên dưới.</div>
+    <div class="banner warn" id="bannerDemo">⚠️ Chế độ demo đang bật — mọi thao tác chỉ áp dụng trên dữ liệu mẫu, chưa kết nối hệ thống thật.</div>
+
+    <div class="stats">
+      <div class="stat"><div class="n" id="stKhoi">0</div><div class="l">Khối</div></div>
+      <div class="stat"><div class="n" id="stLop">0</div><div class="l">Lớp</div></div>
+      <div class="stat"><div class="n" id="stMon">0</div><div class="l">Lớp × Môn (tab GV)</div></div>
+      <div class="stat"><div class="n" id="stHS">0</div><div class="l">Học sinh</div></div>
+    </div>
+
+    <!-- Đồng bộ -->
+    <div class="card">
+      <h2>🔄 Đồng bộ dữ liệu</h2>
+      <div class="sub">Dùng khi giáo viên nhập điểm trực tiếp vào tab riêng trên Sheet (hệ thống cũng tự gộp mỗi 5 phút). Điểm nạp từ file ZIP SMIS thì <b>không cần bấm nút này</b> — đã được ghi vào kho ngay khi bấm “Nạp vào hệ thống”.</div>
+      <div class="sync-row">
+        <div class="sync-info" id="syncInfo">Chưa tải thông tin…</div>
+        <button class="btn btn-primary" id="btnSync" onclick="dongBoNgay()">
+          <span id="btnSyncLabel">Đồng bộ ngay</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Danh mục -->
+    <div class="card">
+      <h2>🗂️ Danh mục khối → lớp → môn</h2>
+      <div class="sub">Mỗi dòng là một tab điểm của giáo viên trong Sheet trung tâm. Thêm dòng sẽ tự tạo tab và khóa tab đó cho giáo viên (theo email).</div>
+      <div class="form-actions" style="margin:0 0 12px">
+        <button class="btn btn-ghost" onclick="moFormDanhMuc()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Thêm lớp – môn
+        </button>
+      </div>
+
+      <div id="formDanhMuc" class="hidden" style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px">
+        <div class="form-grid">
+          <div class="field"><label>Khối *</label>
+            <select id="fKhoi"><option value="6">Khối 6</option><option value="7">Khối 7</option><option value="8" selected>Khối 8</option><option value="9">Khối 9</option></select>
+          </div>
+          <div class="field"><label>Lớp *</label><input id="fLop" placeholder="VD: 8A1"></div>
+          <div class="field"><label>Môn *</label><input id="fMon" list="dsMon" placeholder="VD: Toán">
+            <datalist id="dsMon"><option>Toán</option><option>Ngữ văn</option><option>Ngoại ngữ</option><option>Lịch sử và Địa lí</option><option>Khoa học tự nhiên</option><option>Tin học</option><option>Công nghệ</option><option>Giáo dục công dân</option><option>Giáo dục thể chất</option><option>Nghệ thuật</option><option>Hoạt động trải nghiệm</option><option>Giáo dục địa phương</option></datalist>
+          </div>
+          <div class="field"><label>Giáo viên</label><input id="fGV" placeholder="Họ và tên GV"></div>
+          <div class="field"><label>Email GV (chỉnh sửa được tab)</label><input id="fEmail" placeholder="gv@school.edu.vn, nhiều email cách nhau dấu ,"></div>
+          <div class="field"><label>Học kỳ</label><select id="fHK"><option value="HK1">HK1</option><option value="HK2">HK2</option></select></div>
+          <div class="field"><label>Ghi chú</label><input id="fGhiChu" placeholder="Tùy chọn"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="btnSaveDm" onclick="luuDanhMuc()">Lưu</button>
+          <button class="btn btn-ghost" onclick="dongFormDanhMuc()">Hủy</button>
+          <span class="help" id="formHint"></span>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Khối</th><th>Lớp</th><th>Môn</th><th>Giáo viên</th><th>Tab trên Sheet</th><th>HK</th><th>Số HS</th><th>Cập nhật cuối</th><th></th></tr></thead>
+          <tbody id="dmBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Nạp dữ liệu từ file (SMIS → file → đây) -->
+    <div class="card">
+      <h2>📥 Nạp điểm từ file (không cần giáo viên nhập lại)</h2>
+      <div class="sub">Xuất bảng điểm từ SMIS (Excel/CSV) rồi thả file vào đây — hệ thống tự nhận cột và ghi vào kho điểm. Mỗi lần nạp chỉ mất ~1 phút. <b>Giáo viên không phải làm gì thêm.</b></div>
+
+      <div class="file-zone" id="fileZone" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <div class="t">Chọn hoặc thả file điểm vào đây</div>
+        <div class="s">Nhận thẳng <b>file ZIP xuất từ SMIS</b> (nhiều lớp × nhiều sheet), hoặc .xlsx / .xls / .csv — <a href="javascript:void(0)" onclick="event.stopPropagation(); dungDuLieuMau()">xem thử với dữ liệu mẫu</a></div>
+        <input type="file" id="fileInput" accept=".zip,.xlsx,.xls,.csv,text/csv" class="hidden" onchange="docFileNay(this.files[0])">
+      </div>
+
+      <div id="ingestBox" class="hidden" style="margin-top:14px">
+        <div class="preview-note" id="ingestInfo"></div>
+
+        <!-- Chế độ SMIS: nhận diện tự động, không cần map cột -->
+        <div id="smisBox" class="hidden">
+          <div class="banner warn" id="bannerChuaNoiMayChu" style="margin-top:0">⚠️ Trang đang chạy chế độ demo (chưa nối máy chủ) — nạp lúc này chỉ xem thử, <b>dữ liệu KHÔNG được lưu</b>. Hoàn tất Bước 2–3 trong hướng dẫn để điểm đổ thật vào Google Sheet.</div>
+          <div class="table-scroll" style="margin-bottom:10px"><table class="preview" id="smisSummary"></table></div>
+          <div class="form-grid">
+            <div class="field"><label>Học kỳ của dữ liệu</label><select id="smisHK"><option value="HK1">HK1</option><option value="HK2">HK2</option></select></div>
+            <div class="field"><label>Khối (bỏ trống = tự suy ra từ tên lớp)</label><input id="smisKhoi" placeholder="VD: 8"></div>
+          </div>
+        </div>
+
+        <div id="genericBox">
+          <div class="layout-row">
+            <label><input type="radio" name="boCuc" value="rong" onchange="veMapping()" checked> Bố cục <b>&nbsp;rộng</b>&nbsp;(điểm là các cột: TX1, GK, CK…, gõ tên lớp – môn bên dưới)</label>
+            <label><input type="radio" name="boCuc" value="dai" onchange="veMapping()"> Bố cục <b>&nbsp;dài</b>&nbsp;(mỗi dòng 1 điểm, có cột Môn và Loại điểm)</label>
+          </div>
+
+        <div class="map-grid" id="mapGrid"></div>
+
+        <div id="fixedInfo" class="form-grid" style="margin-top:12px"></div>
+        </div><!-- /genericBox -->
+
+        <div class="che-do">
+          <label><input type="radio" name="cheDo" value="thay" checked> Thay toàn bộ điểm của Lớp – Môn này</label>
+          <label><input type="radio" name="cheDo" value="them"> Thêm vào (giữ điểm cũ)</label>
+        </div>
+
+        <div class="preview-note">Xem trước 5 dòng đầu của file:</div>
+        <div class="table-scroll"><table class="preview" id="previewTable"></table></div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="btnNap" onclick="napDuLieuVaoHeThong()">Nạp vào hệ thống</button>
+          <button class="btn btn-ghost" onclick="huyNap()">Hủy</button>
+        </div>
+        <div class="help" id="ghiChuNap">📌 Sau khi bấm “Nạp vào hệ thống”, toàn bộ điểm được ghi NGAY vào Google Sheet trung tâm của trường (tab DIEM_TONG, sắp xếp khối → lớp → môn) — không cần bấm thêm gì, không mất khi tắt trang.</div>
+      </div>
+    </div>
+
+    <!-- Cấu hình trang công khai -->
+    <div class="card">
+      <h2>🎨 Cấu hình trang tra cứu công khai</h2>
+      <div class="sub">Các thay đổi áp dụng ngay lên trang index.html (sau khi bấm Lưu).</div>
+      <div class="form-grid">
+        <div class="field"><label>Tên trường</label><input id="cTenTruong"></div>
+        <div class="field"><label>Phụ đề</label><input id="cPhuDe"></div>
+        <div class="field"><label>Nhãn học kỳ</label><input id="cHocKy" placeholder="Học kỳ 1 — Năm học 2026-2027"></div>
+        <div class="field"><label>Học kỳ đang hiển thị</label><select id="cHocKyLoc"><option value="HK1">HK1</option><option value="HK2">HK2</option></select></div>
+        <div class="field" style="grid-column:1/-1"><label>Ghi chú dưới ô tìm kiếm</label><input id="cGhiChu"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" id="btnSaveCfg" onclick="luuCauHinh()">Lưu cấu hình</button></div>
+    </div>
+
+    <!-- Đổi mật khẩu -->
+    <div class="card">
+      <h2>🔐 Đổi mật khẩu quản trị</h2>
+      <div class="sub">Mật khẩu từ 6 ký tự trở lên. Sau khi đổi, các thiết bị khác phải đăng nhập lại.</div>
+      <div class="form-grid">
+        <div class="field"><label>Mật khẩu hiện tại</label><input type="password" id="mkCu"></div>
+        <div class="field"><label>Mật khẩu mới</label><input type="password" id="mkMoi"></div>
+        <div class="field"><label>Nhập lại mật khẩu mới</label><input type="password" id="mkMoi2"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="doiMatKhau()">Đổi mật khẩu</button></div>
+    </div>
+
+    <footer>Hệ thống tra cứu điểm — Trường THCS Nguyễn Thái Bình • Dữ liệu lưu trên Google Sheet trung tâm, sắp xếp theo khối → lớp → môn</footer>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CẤU HÌNH ================= */
+const CONFIG = {
+  // URL Web App Apps Script (đã cấu hình)
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwQPRETDGgYf_w8I8xS5-2xa-AloZpgqDMSxE9tvPHIy4Hlu02lk4_NykwvucCfCspn/exec",
+};
+
+const $ = (id) => document.getElementById(id);
+let TOKEN = null;
+let DANH_MUC_HIENTAI = [];
+
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ================= THÔNG BÁO ================= */
+let toastTimer = null;
+function toast(type, msg){
+  const t = $('toast');
+  t.className = 'toast show ' + (type==='err' ? 'err' : type==='info' ? 'info' : 'ok');
+  t.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className='toast'; }, 3200);
+}
+
+/* ================= GỌI API (kèm chế độ demo) ================= */
+async function apiGet(action, params = {}){
+  if (!CONFIG.SCRIPT_URL) return demoApi(action, params, null);
+  const q = new URLSearchParams(Object.assign({ action }, params));
+  const r = await fetch(`${CONFIG.SCRIPT_URL}?${q}`);
+  return r.json();
+}
+async function apiPost(action, data = {}){
+  if (!CONFIG.SCRIPT_URL) return demoApi(action, null, data);
+  const body = new URLSearchParams({ action, token: TOKEN });
+  Object.keys(data).forEach(k => body.append(k, typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k]));
+  const r = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', body });
+  return r.json();
+}
+function xuLyKetQua(res, msgOk){
+  if (res && res.error === 'PHIEN_HET_HAN'){
+    dangXuat(true);
+    toast('err', 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+    return false;
+  }
+  if (res && res.error){ toast('err', res.error); return false; }
+  if (msgOk) toast('ok', res.msg || msgOk);
+  return true;
+}
+
+/* ================= ĐĂNG NHẬP / ĐĂNG XUẤT ================= */
+async function dangNhap(){
+  const pw = $('pwInput').value;
+  if (!pw){ hienLoiDangNhap('Vui lòng nhập mật khẩu.'); return; }
+  $('loginBtn').disabled = true;
+  try {
+    const res = await apiGet('login', { pw });
+    if (res && res.error){ hienLoiDangNhap(res.error); return; }
+    TOKEN = res.token;
+    sessionStorage.setItem('ntb_admin_token', TOKEN);
+    vaoBangDieuKhien(res.macDinh);
+  } catch (e){
+    hienLoiDangNhap('Không kết nối được máy chủ. Kiểm tra mạng và SCRIPT_URL.');
+  } finally {
+    $('loginBtn').disabled = false;
+  }
+}
+function hienLoiDangNhap(msg){ const el = $('loginErr'); el.textContent = msg; el.classList.add('show'); }
+function dangXuat(heThong){
+  TOKEN = null;
+  sessionStorage.removeItem('ntb_admin_token');
+  $('adminView').classList.add('hidden');
+  $('loginView').classList.remove('hidden');
+  $('pwInput').value = '';
+  if (!heThong) toast('info', 'Đã đăng xuất.');
+}
+function vaoBangDieuKhien(macDinh){
+  $('loginView').classList.add('hidden');
+  $('adminView').classList.remove('hidden');
+  $('bannerMacDinh').classList.toggle('show', !!macDinh);
+  taiDuLieu();
+}
+
+/* ================= TẢI DỮ LIỆU ================= */
+async function taiDuLieu(){
+  try {
+    const d = await apiGet('dashboard');
+    if (!xuLyKetQua(d)) return;
+    DANH_MUC_HIENTAI = d.danhMuc || [];
+    $('topTenTruong').textContent = d.meta.TEN_TRUONG;
+    $('stKhoi').textContent = d.thongKe.soKhoi;
+    $('stLop').textContent = d.thongKe.soLop;
+    $('stMon').textContent = d.thongKe.soMon;
+    $('stHS').textContent = d.thongKe.soHocSinh;
+    $('btnOpenSheet').href = d.sheetUrl || '#';
+    $('syncInfo').textContent = (d.meta.CAP_NHAT ? 'Đồng bộ lần cuối: ' + d.meta.CAP_NHAT : 'Chưa có lần đồng bộ nào') +
+      ' — ' + DANH_MUC_HIENTAI.length + ' tab giáo viên đang theo dõi.';
+    // cấu hình
+    $('cTenTruong').value = d.meta.TEN_TRUONG || '';
+    $('cPhuDe').value = d.meta.PHU_DE || '';
+    $('cHocKy').value = d.meta.HOC_KY || '';
+    $('cHocKyLoc').value = d.meta.HOC_KY_LOC || 'HK1';
+    $('cGhiChu').value = d.meta.GHI_CHU || '';
+    veBangDanhMuc();
+  } catch (e){
+    toast('err', 'Không tải được dữ liệu. Kiểm tra kết nối và thử lại (F5).');
+  }
+}
+
+function veBangDanhMuc(){
+  const body = $('dmBody');
+  if (!DANH_MUC_HIENTAI.length){
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--slate-400);padding:22px">Chưa có tab giáo viên nào — bấm “Thêm lớp – môn” để tạo dòng đầu tiên.</td></tr>`;
+    return;
+  }
+  body.innerHTML = DANH_MUC_HIENTAI.map(r => `
+    <tr>
+      <td class="khoi-cell">${esc(r.Khoi || '')}</td>
+      <td><b>${esc(r.Lop)}</b></td>
+      <td>${esc(r.Mon)}</td>
+      <td>${esc(r.GiaoVien || '')}<div class="muted">${esc(r.Email || '')}</div></td>
+      <td><span class="tabname">${esc(r.TabName)}</span></td>
+      <td>${esc(r.HocKy || '')}</td>
+      <td>${r.SoHS ? `<span class="ok-chip">${esc(r.SoHS)} HS</span>` : '<span class="muted">—</span>'}</td>
+      <td class="muted">${esc(r.CapNhatCuoi || '—')}</td>
+      <td>
+        <div class="row-btns">
+          <button class="icon-btn" onclick='moFormSua(${JSON.stringify(JSON.stringify(r))})'>Sửa</button>
+          <button class="icon-btn danger" onclick="xoaDanhMuc('${esc(r.TabName)}', ${Number(r.SoHS)||0})">Xóa</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+/* ================= DANH MỤC: THÊM / SỬA / XÓA ================= */
+function moFormDanhMuc(){
+  $('formHint').textContent = '';
+  $('fKhoi').value='8'; $('fLop').value=''; $('fMon').value=''; $('fGV').value='';
+  $('fEmail').value=''; $('fGhiChu').value='';
+  $('fHK').value = $('cHocKyLoc').value || 'HK1';
+  $('formDanhMuc').dataset.stt = '';
+  $('formDanhMuc').classList.remove('hidden');
+  $('fLop').focus();
+}
+function moFormSua(jsonStr){
+  const r = JSON.parse(jsonStr);
+  $('formDanhMuc').dataset.stt = r.STT || '';
+  $('fKhoi').value = r.Khoi || '8';
+  $('fLop').value = r.Lop || '';
+  $('fMon').value = r.Mon || '';
+  $('fGV').value = r.GiaoVien || '';
+  $('fEmail').value = r.Email || '';
+  $('fHK').value = r.HocKy || 'HK1';
+  $('fGhiChu').value = r.GhiChu || '';
+  $('formHint').textContent = 'Đang sửa: ' + r.TabName;
+  $('formDanhMuc').classList.remove('hidden');
+  $('formDanhMuc').scrollIntoView({behavior:'smooth', block:'center'});
+}
+function dongFormDanhMuc(){ $('formDanhMuc').classList.add('hidden'); }
+
+async function luuDanhMuc(){
+  const stt = $('formDanhMuc').dataset.stt || '';
+  const row = {
+    STT: stt, Khoi: $('fKhoi').value, Lop: $('fLop').value.trim(), Mon: $('fMon').value.trim(),
+    GiaoVien: $('fGV').value.trim(), Email: $('fEmail').value.trim(),
+    HocKy: $('fHK').value, GhiChu: $('fGhiChu').value.trim(),
+  };
+  if (!row.Lop || !row.Mon){ toast('err','Cần nhập đủ Lớp và Môn.'); return; }
+  $('btnSaveDm').disabled = true;
+  try {
+    const res = await apiPost('registrySave', { data: row });
+    if (xuLyKetQua(res, 'Đã lưu danh mục.')){
+      if (res.danhMuc) DANH_MUC_HIENTAI = res.danhMuc;
+      veBangDanhMuc(); dongFormDanhMuc(); lamMoiThongKe();
+    }
+  } catch(e){ toast('err','Không kết nối được máy chủ.'); }
+  finally { $('btnSaveDm').disabled = false; }
+}
+
+async function xoaDanhMuc(tabName, soHS){
+  if (!confirm(`Xóa "${tabName}" khỏi danh mục?`)) return;
+  const xoaTab = soHS > 0 ? confirm('Xóa LUÔN cả tab điểm này trên Sheet? (Chọn "Hủy" nếu chỉ gỡ khỏi danh mục, giữ lại tab)') : false;
+  if (!xoaTab && soHS > 0 && !confirm('Giữ lại tab trên Sheet và chỉ gỡ khỏi hệ thống?')) return;
+  try {
+    const res = await apiPost('registryDelete', { tabName, xoaTab: xoaTab ? '1' : '0' });
+    if (xuLyKetQua(res, 'Đã xóa khỏi danh mục.')){
+      if (res.danhMuc) DANH_MUC_HIENTAI = res.danhMuc;
+      veBangDanhMuc(); lamMoiThongKe();
+    }
+  } catch(e){ toast('err','Không kết nối được máy chủ.'); }
+}
+function lamMoiThongKe(){
+  const khois={},lops={};
+  DANH_MUC_HIENTAI.forEach(r=>{khois[r.Khoi]=1;lops[r.Lop]=1;});
+  $('stKhoi').textContent=Object.keys(khois).length;
+  $('stLop').textContent=Object.keys(lops).length;
+  $('stMon').textContent=DANH_MUC_HIENTAI.length;
+}
+
+/* ================= ĐỒNG BỘ / CẤU HÌNH / MẬT KHẨU ================= */
+async function dongBoNgay(){
+  const btn = $('btnSync');
+  btn.disabled = true;
+  $('btnSyncLabel').innerHTML = '<span class="spinner"></span>&nbsp;Đang gộp dữ liệu…';
+  try {
+    const res = await apiPost('syncNow', {});
+    if (xuLyKetQua(res)) { toast('ok', res.msg || 'Đã đồng bộ xong.'); taiDuLieu(); }
+  } catch(e){ toast('err','Không kết nối được máy chủ.'); }
+  finally {
+    btn.disabled = false;
+    $('btnSyncLabel').textContent = 'Đồng bộ ngay';
+  }
+}
+
+async function luuCauHinh(){
+  const data = {
+    TEN_TRUONG: $('cTenTruong').value.trim(),
+    PHU_DE: $('cPhuDe').value.trim(),
+    HOC_KY: $('cHocKy').value.trim(),
+    HOC_KY_LOC: $('cHocKyLoc').value,
+    GHI_CHU: $('cGhiChu').value.trim(),
+  };
+  $('btnSaveCfg').disabled = true;
+  try {
+    const res = await apiPost('configSave', { data });
+    if (xuLyKetQua(res, 'Đã lưu cấu hình — trang tra cứu đã cập nhật.')){
+      $('topTenTruong').textContent = data.TEN_TRUONG;
+    }
+  } catch(e){ toast('err','Không kết nối được máy chủ.'); }
+  finally { $('btnSaveCfg').disabled = false; }
+}
+
+async function doiMatKhau(){
+  const cu = $('mkCu').value, moi = $('mkMoi').value, moi2 = $('mkMoi2').value;
+  if (moi !== moi2){ toast('err','Hai lần nhập mật khẩu mới không khớp.'); return; }
+  if (moi.length < 6){ toast('err','Mật khẩu mới phải từ 6 ký tự trở lên.'); return; }
+  try {
+    const res = await apiPost('changePassword', { oldPw: cu, newPw: moi });
+    if (xuLyKetQua(res)){
+      toast('ok', res.msg || 'Đã đổi mật khẩu quản trị.');
+      $('bannerMacDinh').classList.remove('show');
+      $('mkCu').value = $('mkMoi').value = $('mkMoi2').value = '';
+    }
+  } catch(e){ toast('err','Không kết nối được máy chủ.'); }
+}
+
+/* ================= NẠP ĐIỂM TỪ FILE ================= */
+let fileHeaders = [], fileRows = [], tenFile = '';
+
+// Đọc CSV (tự nhận dấu ; , hoặc tab) → mảng mảng
+function parseCsv(text){
+  text = text.replace(/^\uFEFF/, '');
+  const dau = [text.split('\n')[0].includes(';') ? ';' : (text.split('\n')[0].includes('\t') ? '\t' : ',')][0];
+  const rows = [];
+  let cur = [], val = '', inQ = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (inQ){
+      if (c === '"'){ if (text[i+1] === '"'){ val += '"'; i++; } else inQ = false; }
+      else val += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === dau){ cur.push(val); val = ''; }
+      else if (c === '\n'){ cur.push(val); rows.push(cur); cur = []; val = ''; }
+      else if (c !== '\r') val += c;
+    }
+  }
+  if (val !== '' || cur.length){ cur.push(val); rows.push(cur); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+
+/* ---- Chế độ SMIS: nhận diện bảng điểm xuất từ SMIS (file ZIP nhiều lớp / 1 file nhiều sheet) ---- */
+let smisTables = null; // [{lop, mon, gv, hk, headers, rows, colMa}]
+
+/**
+ * File xuất từ SMIS ghi SAI thuộc tính dimension trong XML (VD "A1:R6" dù có
+ * chục dòng điểm) khiến thư viện cắt mất dữ liệu. Hàm này quét lại toàn bộ ô
+ * có thật trong sheet và mở rộng vùng đọc cho đúng.
+ */
+function suaRef(ws){
+  try {
+    let maxR = 0, maxC = 0;
+    Object.keys(ws).forEach(k => {
+      if (k[0] === '!') return;
+      const c = XLSX.utils.decode_cell(k);
+      if (c.r > maxR) maxR = c.r;
+      if (c.c > maxC) maxC = c.c;
+    });
+    if (maxR || maxC) ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxR, c: maxC } });
+  } catch (e) { /* giữ nguyên ref cũ nếu lỗi */ }
+  return ws;
+}
+function sheetThanhRows(ws){
+  return XLSX.utils.sheet_to_json(suaRef(ws), { header: 1, raw: false, defval: '' })
+    .map(r => r.map(c => String(c ?? '').trim()));
+}
+
+function trySmis(rows){
+  let h = -1;
+  for (let i = 0; i < Math.min(rows.length, 15); i++){
+    if (rows[i].some(c => String(c || '').includes('Mã định danh'))) { h = i; break; }
+  }
+  if (h === -1) return null;
+  let lop = '', mon = '', gv = '', hk = '';
+  for (let i = 0; i < h; i++){
+    rows[i].forEach(c => {
+      const s = String(c || '');
+      let m;
+      if ((m = s.match(/Lớp\s*:\s*(.+)$/))) lop = m[1].trim();
+      if ((m = s.match(/Môn học\s*:\s*(.+)$/))){
+        const t = m[1].split(/\s*-\s*GV\s*:/);
+        mon = (t[0] || '').trim();
+        gv = (t[1] || '').trim();
+      }
+      if (/Học kỳ\s*:\s*II/.test(s)) hk = 'HK2';
+      else if (/Học kỳ\s*:\s*I[^I]/.test(s) || /Học kỳ\s*:\s*I$/.test(s)) hk = 'HK1';
+    });
+  }
+  const h1 = rows[h], h2 = rows[h + 1] || [];
+  let nhom = ''; // nhớ nhãn nhóm (ĐĐGtx trải trên nhiều cột con 1..5)
+  const headers = h1.map((c, i) => {
+    const a = String(c || '').replace(/\n/g, '').trim();
+    const b = String(h2[i] || '').trim();
+    if (a) nhom = a;
+    const g = a || (/^\d+$/.test(b) ? nhom : '');
+    if (/gtx/i.test(g)) return /^\d+$/.test(b) ? 'TX ' + b : 'TX';
+    if (/ĐĐG.{0,2}gk/i.test(g)) return 'Giữa kỳ';
+    if (/ĐĐG.{0,2}ck/i.test(g)) return 'Cuối kỳ';
+    if (/ĐTBmhk1/i.test(g)) return 'TB HK1';
+    if (/ĐTBmhk2/i.test(g)) return 'TB HK2';
+    if (/ĐTBmcn/i.test(g)) return 'TB cả năm';
+    if (/Nhận xét/i.test(g)) return '';
+    return a;
+  });
+  const colMa = headers.findIndex(t => /Mã định danh/.test(t));
+  if (colMa === -1) return null;
+  const data = rows.slice(h + 2).filter(r => String(r[colMa] || '').replace(/\D/g, '').length >= 8);
+  if (!data.length) return null;
+  return { lop, mon, gv, hk, headers, rows: data, colMa };
+}
+
+function smisThanhRows(t){
+  const colTen = t.headers.findIndex(x => /Họ và tên/.test(x));
+  const colNs = t.headers.findIndex(x => /Ngày sinh/.test(x));
+  return t.rows.map(r => {
+    const diem = [];
+    t.headers.forEach((hd, i) => {
+      if (!hd || i === t.colMa || i === colTen || i === colNs) return;
+      if (!/^(TX \d+|TX$|Giữa kỳ|Cuối kỳ|TB )/.test(hd)) return;
+      const v = String(r[i] ?? '').trim();
+      if (v !== '') diem.push({ loaiDiem: hd, diemSo: v });
+    });
+    return {
+      ma: String(r[t.colMa] || '').replace(/\s+/g, ''),
+      hoTen: colTen >= 0 ? String(r[colTen] || '') : '',
+      ngaySinh: colNs >= 0 ? String(r[colNs] || '') : '',
+      lop: t.lop, mon: t.mon, giaoVien: t.gv, diem: diem,
+    };
+  }).filter(x => x.diem.length);
+}
+
+async function docZip(file){
+  if (typeof JSZip === 'undefined' || window.__khongJszip){
+    toast('err', 'Không tải được thư viện đọc ZIP. Hãy giải nén rồi nạp từng file .xlsx, hoặc thử lại khi có mạng.');
+    return;
+  }
+  try {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const tables = [];
+    const viec = [];
+    zip.forEach((path, entry) => {
+      if (entry.dir || /__MACOSX|\/\._/.test(path)) return;
+      if (!/\.(xlsx|xls|csv)$/i.test(path)) return;
+      viec.push(entry.async('arraybuffer').then(buf => {
+        let wb;
+        try { wb = XLSX.read(buf, { type: 'array', raw: false }); }
+        catch (e) { return; }
+        const lopTuFile = (path.match(/(\d{1,2}\s*[A-Za-zĐƯ][A-Za-z0-9]*)/g) || []).map(s => s.replace(/\s+/g, '')).pop() || '';
+        wb.SheetNames.forEach(sn => {
+          const rows = sheetThanhRows(wb.Sheets[sn]);
+          const t = trySmis(rows);
+          if (t){ if (!t.lop) t.lop = lopTuFile; tables.push(t); }
+        });
+      }));
+    });
+    await Promise.all(viec);
+    if (!tables.length){
+      toast('err', 'Trong ZIP không tìm thấy bảng điểm SMIS nào (cần cột “Mã định danh”).');
+      return;
+    }
+    tables.sort((a, b) => String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }) || String(a.mon).localeCompare(String(b.mon), 'vi'));
+    smisTables = tables;
+    tenFile = file.name;
+    hienSmis();
+  } catch (e){
+    console.error(e);
+    toast('err', 'Không đọc được ZIP: ' + e.message);
+  }
+}
+
+function hienSmis(){
+  $('ingestInfo').textContent = `📦 ${tenFile} — đã tự nhận ${smisTables.length} bảng điểm SMIS (lớp × môn), KHÔNG cần map cột.`;
+  $('smisBox').classList.remove('hidden');
+  $('genericBox').classList.add('hidden');
+  $('ingestBox').classList.remove('hidden');
+  $('bannerChuaNoiMayChu').classList.toggle('show', !CONFIG.SCRIPT_URL);
+  const hk01 = smisTables[0] && smisTables[0].hk;
+  $('smisHK').value = hk01 || ($('cHocKyLoc') ? $('cHocKyLoc').value : 'HK1');
+
+  let html = '<thead><tr><th>Lớp</th><th>Môn</th><th>GV</th><th>Số HS có điểm</th></tr></thead><tbody>';
+  smisTables.forEach(t => {
+    html += `<tr><td><b>${esc(t.lop)}</b></td><td>${esc(t.mon)}</td><td class="muted">${esc(t.gv || '—')}</td><td><span class="ok-chip">${t.rows.length} HS</span></td></tr>`;
+  });
+  $('smisSummary').innerHTML = html + '</tbody>';
+
+  // xem trước bảng đầu tiên
+  const t0 = smisTables[0];
+  const muc = ['TX 1','TX 2','TX 3','TX 4','TX 5','Giữa kỳ','Cuối kỳ','TB HK1','TB cả năm'];
+  const seCot = [t0.colMa, t0.headers.findIndex(x => /Họ và tên/.test(x))].concat(
+    muc.map(m => t0.headers.indexOf(m)).filter(i => i >= 0));
+  let p = '<thead><tr>' + seCot.map(i => `<th>${esc(t0.headers[i])}</th>`).join('') + '</tr></thead><tbody>';
+  t0.rows.slice(0, 5).forEach(r => { p += '<tr>' + seCot.map(i => `<td>${esc(r[i])}</td>`).join('') + '</tr>'; });
+  $('previewTable').innerHTML = p + '</tbody>';
+
+  $('ingestBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function docFileNay(file){
+  if (!file) return;
+  smisTables = null;
+  $('smisBox').classList.add('hidden');
+  $('genericBox').classList.remove('hidden');
+  if (/\.(zip)$/i.test(file.name)) return docZip(file);
+  tenFile = file.name;
+  try {
+    let sheets = []; // [{name, rows}]
+    if (/\.(xlsx|xls)$/i.test(file.name)){
+      if (typeof XLSX === 'undefined' || window.__khongXlsx){
+        toast('err', 'Không tải được thư viện đọc Excel. Hãy lưu file thành CSV (Excel → Save As → CSV UTF-8) rồi thử lại.');
+        return;
+      }
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', raw: false });
+      wb.SheetNames.forEach(sn => sheets.push({
+        name: sn,
+        rows: sheetThanhRows(wb.Sheets[sn]),
+      }));
+    } else {
+      sheets = [{ name: 'CSV', rows: parseCsv(await file.text()).map(r => r.map(c => String(c ?? '').trim())) }];
+    }
+    if (!sheets.length){ toast('err', 'File rỗng hoặc không đọc được.'); return; }
+
+    // Ưu tiên: nếu file là bảng điểm SMIS (đa sheet, mỗi sheet 1 môn) → chế độ tự động
+    const smis = sheets.map(s => trySmis(s.rows)).filter(Boolean);
+    if (smis.length){
+      smisTables = smis;
+      hienSmis();
+      return;
+    }
+    // Ngược lại: luồng map cột thủ công với sheet đầu tiên
+    const rows = sheets[0].rows;
+    fileHeaders = rows[0].map(h => String(h).trim());
+    fileRows = rows.slice(1).map(r => fileHeaders.map((_, i) => String(r[i] ?? '').trim()));
+    hienIngest();
+  } catch (e){
+    console.error(e);
+    toast('err', 'Không đọc được file: ' + e.message);
+  }
+}
+
+function dungDuLieuMau(){
+  smisTables = null;
+  tenFile = 'mau-8A1-Toan.csv';
+  const csv = 'MaDinhDanh,HoTen,NgaySinh,TX1,TX2,GK,CK\n' +
+    '012345678910,Nguyễn Thị Hạ,02/01/2012,8,8.5,7,9\n' +
+    '012345678911,Phạm Văn Kha,14/05/2012,6.5,7,,8\n' +
+    '012345678912,Trần Ngọc Lan,30/09/2012,9,9.5,9,10';
+  const rows = parseCsv(csv);
+  fileHeaders = rows[0]; fileRows = rows.slice(1);
+  hienIngest();
+}
+
+function hienIngest(){
+  $('smisBox').classList.add('hidden');
+  $('genericBox').classList.remove('hidden');
+  $('bannerChuaNoiMayChu').classList.toggle('show', !CONFIG.SCRIPT_URL);
+  // Tự đoán bố cục: có cột Môn + Loại điểm → dạng dài
+  const coMon = fileHeaders.some(h => /^(môn|mon|học phần)$/i.test(h));
+  const coLoai = fileHeaders.some(h => /(loại.?điểm|loai.?diem|đầu.?điểm|điểm.*phần|thành.?phần)/i.test(h));
+  const boCuc = (coMon && coLoai) ? 'dai' : 'rong';
+  document.querySelector(`input[name="boCuc"][value="${boCuc}"]`).checked = true;
+  $('ingestInfo').textContent = `📄 ${tenFile} — ${fileRows.length} dòng, ${fileHeaders.length} cột. Đã tự nhận: bố cục ${boCuc === 'dai' ? 'DÀI' : 'RỘNG'} (đổi được bên phải nếu sai).`;
+  $('ingestBox').classList.remove('hidden');
+  veMapping();
+}
+
+// Tự chọn cột khớp tên gần đúng
+function doCot(mau){
+  const re = new RegExp(mau, 'i');
+  const i = fileHeaders.findIndex(h => re.test(h));
+  return i >= 0 ? i : '';
+}
+function veMapping(){
+  const dai = document.querySelector('input[name="boCuc"]:checked').value === 'dai';
+  const target = dai
+    ? [['napMa','Mã định danh', doCot('ma.*(danh|định)|maDD|^ma$')],
+       ['napTen','Họ và tên', doCot('họ.?và.?tên|ho.?ten')],
+       ['napNs','Ngày sinh (không bắt buộc)', doCot('ngày.?sinh|ngay.?sinh')],
+       ['napLop','Lớp', doCot('^lớp$|^lop$')],
+       ['napMon','Môn', doCot('^môn$|^mon$')],
+       ['napLoai','Loại điểm', doCot('loại.?điểm|loai.?diem|đầu.?điểm|điểm.*phần|thành.?phần')],
+       ['napDiem','Giá trị điểm', doCot('^điểm$|^diem$|điểm.?số|diem.?so|giá.?trị|gia.?tri')]]
+    : [['napMa','Mã định danh', doCot('ma.*(danh|định)|maDD|^ma$')],
+       ['napTen','Họ và tên', doCot('họ.?và.?tên|ho.?ten')],
+       ['napNs','Ngày sinh (không bắt buộc)', doCot('ngày.?sinh|ngay.?sinh')]];
+
+  $('mapGrid').innerHTML = target.map(([id, label, val]) => `
+    <div class="field"><label>${label}</label>
+      <select id="${id}">
+        <option value="">— bỏ trống —</option>
+        ${fileHeaders.map((h, i) => `<option value="${i}" ${String(val) === String(i) ? 'selected' : ''}>${esc(h)}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  // Ô khai báo cố định
+  const hk = $('cHocKyLoc') ? $('cHocKyLoc').value : 'HK1';
+  $('fixedInfo').innerHTML = dai
+    ? `<div class="field"><label>Khối (bỏ trống = tự suy ra từ Lớp)</label><input id="napKhoi" placeholder="VD: 8"></div>
+       <div class="field"><label>Giáo viên (tùy chọn)</label><input id="napGV" placeholder="Tên GV"></div>
+       <div class="field"><label>Học kỳ của dữ liệu</label><select id="napHK"><option value="HK1">HK1</option><option value="HK2">HK2</option></select></div>`
+    : `<div class="field"><label>Khối (bỏ trống = tự suy ra từ Lớp)</label><input id="napKhoi" placeholder="VD: 8"></div>
+       <div class="field"><label>Lớp của file này *</label><input id="napLopFix" placeholder="VD: 8A1"></div>
+       <div class="field"><label>Môn của file này *</label><input id="napMonFix" placeholder="VD: Toán"></div>
+       <div class="field"><label>Giáo viên (tùy chọn)</label><input id="napGV" placeholder="Tên GV"></div>
+       <div class="field"><label>Học kỳ của dữ liệu</label><select id="napHK"><option value="HK1" selected>HK1</option><option value="HK2">HK2</option></select></div>`;
+  if ($('napHK')) $('napHK').value = hk;
+
+  vePreview();
+  $('ingestBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function vePreview(){
+  const nCot = Math.min(fileHeaders.length, 10);
+  let html = '<thead><tr>' + fileHeaders.slice(0, nCot).map(h => `<th>${esc(h)}</th>`).join('') + '</tr></thead><tbody>';
+  fileRows.slice(0, 5).forEach(r => {
+    html += '<tr>' + Array.from({length: nCot}, (_, i) => `<td>${esc(r[i])}</td>`).join('') + '</tr>';
+  });
+  $('previewTable').innerHTML = html + '</tbody>';
+}
+
+function suyKhoiTuLop(lop, khoiNh){
+  const d = String(lop || '').match(/\d+/);
+  return String(khoiNh || '').trim() || (d ? String(parseInt(d[0], 10)) : '');
+}
+
+async function napDuLieuVaoHeThong(){
+  // ---- Chế độ SMIS tự động: gom toàn bộ bảng thành 1 lượt nạp ----
+  if (smisTables && smisTables.length){
+    const cheDo = document.querySelector('input[name="cheDo"]:checked').value;
+    const hk = $('smisHK') ? $('smisHK').value : 'HK1';
+    const khoiNh = $('smisKhoi') ? $('smisKhoi').value.trim() : '';
+    const rowsAll = [];
+    smisTables.forEach(t => smisThanhRows(t).forEach(r => rowsAll.push(r)));
+    if (!rowsAll.length){ toast('err', 'Không đọc được điểm nào từ các bảng SMIS.'); return; }
+    const payload = {
+      khoi: suyKhoiTuLop(rowsAll[0].lop, khoiNh), lop: '', mon: '',
+      giaoVien: '', hocKy: hk, cheDo, rows: rowsAll,
+    };
+    $('btnNap').disabled = true;
+    try {
+      const res = await apiPost('napDiem', { data: payload });
+      if (xuLyKetQua(res)){
+        toast('ok', res.msg || 'Đã nạp toàn bộ dữ liệu SMIS.');
+        taiDuLieu();
+        setTimeout(huyNap, 900);
+      }
+    } catch(e){ toast('err', 'Không kết nối được máy chủ.'); }
+    finally { $('btnNap').disabled = false; }
+    return;
+  }
+
+  const dai = document.querySelector('input[name="boCuc"]:checked').value === 'dai';
+  const cMa = Number($('napMa').value);
+  if (isNaN(cMa)){ toast('err', 'Hãy chọn cột Mã định danh.'); return; }
+  const cTen = $('napTen').value === '' ? -1 : Number($('napTen').value);
+  const cNs = $('napNs').value === '' ? -1 : Number($('napNs').value);
+  const hk = $('napHK') ? $('napHK').value : 'HK1';
+  const gv = $('napGV') ? $('napGV').value.trim() : '';
+  const khoiNh = $('napKhoi') ? $('napKhoi').value.trim() : '';
+  const cheDo = document.querySelector('input[name="cheDo"]:checked').value;
+
+  const payload = { khoi: '', lop: '', mon: '', giaoVien: gv, hocKy: hk, cheDo, rows: [] };
+
+  if (dai){
+    const cLop = Number($('napLop').value), cMon = Number($('napMon').value);
+    const cLoai = Number($('napLoai').value), cDiem = Number($('napDiem').value);
+    if (isNaN(cLop) || isNaN(cMon) || isNaN(cLoai) || isNaN(cDiem)){
+      toast('err', 'Bố cục DÀI cần chọn đủ cột: Lớp, Môn, Loại điểm, Giá trị điểm.');
+      return;
+    }
+    const boiMap = {}; // gom theo học sinh để gửi đúng cấu trúc
+    fileRows.forEach(r => {
+      const ma = (r[cMa] || '').replace(/\s+/g, '');
+      if (!ma) return;
+      const lop = r[cLop], mon = r[cMon];
+      const so = r[cDiem];
+      if (String(so).trim() === '') return;
+      const key = ma;
+      if (!boiMap[key]) boiMap[key] = { ma, hoTen: cTen >= 0 ? r[cTen] : '', ngaySinh: cNs >= 0 ? r[cNs] : '', lop, mon, diem: [] };
+      boiMap[key].diem.push({ loaiDiem: r[cLoai], diemSo: so });
+    });
+    payload.rows = Object.values(boiMap);
+    payload.khoi = suyKhoiTuLop(payload.rows[0] ? payload.rows[0].lop : '', khoiNh);
+  } else {
+    const lop = $('napLopFix').value.trim(), mon = $('napMonFix').value.trim();
+    if (!lop || !mon){ toast('err', 'Bố cục RỘNG cần khai báo Lớp và Môn của file.'); return; }
+    payload.lop = lop; payload.mon = mon; payload.khoi = suyKhoiTuLop(lop, khoiNh);
+    payload.rows = fileRows.map(r => {
+      const ma = (r[cMa] || '').replace(/\s+/g, '');
+      const diem = [];
+      fileHeaders.forEach((h, i) => {
+        if (i === cMa || i === cTen || i === cNs) return;
+        if (String(r[i]).trim() !== '' && String(h).trim() !== '') diem.push({ loaiDiem: h, diemSo: r[i] });
+      });
+      return { ma, hoTen: cTen >= 0 ? r[cTen] : '', ngaySinh: cNs >= 0 ? r[cNs] : '', diem };
+    }).filter(x => x.ma);
+  }
+
+  if (!payload.rows.length){ toast('err', 'Không có dòng hợp lệ nào (thiếu Mã định danh).'); return; }
+
+  $('btnNap').disabled = true;
+  try {
+    const res = await apiPost('napDiem', { data: payload });
+    if (xuLyKetQua(res)){
+      toast('ok', res.msg || 'Đã nạp dữ liệu.');
+      taiDuLieu();
+      setTimeout(huyNap, 800);
+    }
+  } catch(e){ toast('err', 'Không kết nối được máy chủ.'); }
+  finally { $('btnNap').disabled = false; }
+}
+
+function huyNap(){
+  $('ingestBox').classList.add('hidden');
+  $('fileInput').value = '';
+  fileHeaders = []; fileRows = []; smisTables = null;
+}
+
+// Kéo–thả file vào vùng
+(function ganKeoTha(){
+  const z = document.getElementById('fileZone');
+  if (!z) return;
+  ['dragover', 'dragenter'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.style.borderColor = 'var(--blue-500)'; z.style.background = 'var(--blue-50)'; }));
+  ['dragleave', 'drop'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.style.borderColor = ''; z.style.background = ''; }));
+  z.addEventListener('drop', e => { if (e.dataTransfer.files && e.dataTransfer.files[0]) docFileNay(e.dataTransfer.files[0]); });
+})();
+
+/* ================= CHẾ ĐỘ DEMO (khi chưa có SCRIPT_URL) ================= */
+let demoData = null;
+function khoiTaoDemo(){
+  demoData = {
+    meta: { TEN_TRUONG:'Trường THCS Nguyễn Thái Bình (demo)', PHU_DE:'Cổng tra cứu kết quả học tập',
+      HOC_KY:'Học kỳ 1 — Năm học 2026-2027', HOC_KY_LOC:'HK1',
+      GHI_CHU:'Mã định danh gồm các chữ số do giáo viên chủ nhiệm cung cấp', CAP_NHAT:'17/11/2026 09:42' },
+    sheetUrl: '#',
+    thongKe: { soKhoi:2, soLop:3, soMon:6, soHocSinh:104 },
+    danhMuc: [
+      { STT:'1', Khoi:'6', Lop:'6A1', Mon:'Toán', GiaoVien:'Trần Thị B', Email:'tranb@demo.vn', TabName:'6A1-Toán', HocKy:'HK1', SoHS:'35', CapNhatCuoi:'17/11/2026 08:10' },
+      { STT:'2', Khoi:'6', Lop:'6A1', Mon:'Ngữ văn', GiaoVien:'Lê Văn C', Email:'lec@demo.vn', TabName:'6A1-Ngữ văn', HocKy:'HK1', SoHS:'35', CapNhatCuoi:'17/11/2026 07:55' },
+      { STT:'3', Khoi:'6', Lop:'6A2', Mon:'Toán', GiaoVien:'Trần Thị B', Email:'tranb@demo.vn', TabName:'6A2-Toán', HocKy:'HK1', SoHS:'34', CapNhatCuoi:'16/11/2026 16:30' },
+      { STT:'4', Khoi:'8', Lop:'8A1', Mon:'Toán', GiaoVien:'Phạm Thị D', Email:'phamd@demo.vn', TabName:'8A1-Toán', HocKy:'HK1', SoHS:'36', CapNhatCuoi:'17/11/2026 09:42' },
+      { STT:'5', Khoi:'8', Lop:'8A1', Mon:'Ngữ văn', GiaoVien:'Hoàng Văn E', Email:'hoange@demo.vn', TabName:'8A1-Ngữ văn', HocKy:'HK1', SoHS:'36', CapNhatCuoi:'15/11/2026 14:20' },
+      { STT:'6', Khoi:'8', Lop:'8A2', Mon:'Ngoại ngữ', GiaoVien:'Ngô Thị F', Email:'ngof@demo.vn', TabName:'8A2-Ngoại ngữ', HocKy:'HK1', SoHS:'', CapNhatCuoi:'' },
+    ],
+  };
+}
+async function demoApi(action, getParams, postData){
+  if (!demoData) khoiTaoDemo();
+  await new Promise(r => setTimeout(r, 500));
+  const parse = (v) => (typeof v === 'string' ? JSON.parse(v || '{}') : (v || {}));
+  if (action === 'login') return { ok:true, token:'demo-token', macDinh:true };
+  if (action === 'dashboard') return Object.assign({ ok:true }, demoData);
+  if (action === 'syncNow'){ demoData.meta.CAP_NHAT = new Date().toLocaleString('vi-VN'); return { ok:true, msg:'(Demo) Đã đồng bộ ' + demoData.danhMuc.length + ' tab.' }; }
+  if (action === 'configSave'){
+    Object.assign(demoData.meta, parse(postData.data));
+    return { ok:true, msg:'(Demo) Đã lưu cấu hình.' };
+  }
+  if (action === 'registrySave'){
+    const row = parse(postData.data);
+    const dm = demoData.danhMuc;
+    const i = row.STT ? dm.findIndex(r => r.STT === row.STT) : -1;
+    const tao = { STT: row.STT || String(dm.length+1), Khoi:row.Khoi, Lop:row.Lop, Mon:row.Mon,
+      GiaoVien:row.GiaoVien, Email:row.Email, TabName:(row.Lop+'-'+row.Mon), HocKy:row.HocKy, SoHS:'', CapNhatCuoi:'', GhiChu:row.GhiChu };
+    if (i >= 0) dm[i] = Object.assign(dm[i], tao); else dm.push(tao);
+    return { ok:true, msg:'(Demo) Đã lưu danh mục.', danhMuc: dm };
+  }
+  if (action === 'registryDelete'){
+    demoData.danhMuc = demoData.danhMuc.filter(r => r.TabName !== postData.tabName);
+    return { ok:true, msg:'(Demo) Đã xóa khỏi danh mục.', danhMuc: demoData.danhMuc };
+  }
+  if (action === 'changePassword'){
+    return { ok:true, msg:'(Demo) Đã đổi mật khẩu.' };
+  }
+  if (action === 'napDiem'){
+    const d = parse(postData.data);
+    let so = 0; (d.rows || []).forEach(it => so += (it.diem || []).length);
+    demoData.meta.CAP_NHAT = new Date().toLocaleString('vi-VN');
+    return { ok:true, msg:'(Demo) Đã nạp ' + so + ' điểm vào hệ thống.', soHang: so };
+  }
+  return { error:'Không hỗ trợ trong demo' };
+}
+
+/* ================= KHỞI ĐỘNG ================= */
+(function init(){
+  if (!CONFIG.SCRIPT_URL){
+    $('demoChip').style.display = 'block';
+    $('bannerDemo').classList.add('show');
+  }
+  $('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') dangNhap(); });
+  const tok = sessionStorage.getItem('ntb_admin_token');
+  if (tok){ TOKEN = tok; vaoBangDieuKhien(false); }
+})();
+</script>
+</body>
+</html>
