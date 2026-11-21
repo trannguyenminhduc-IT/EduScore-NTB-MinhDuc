@@ -422,7 +422,7 @@ function vaoBangDieuKhien(macDinh){
 /* ================= TẢI DỮ LIỆU ================= */
 async function taiDuLieu(){
   try {
-    const d = await apiGet('dashboard');
+    const d = await apiGet('dashboard', { token: TOKEN });
     if (!xuLyKetQua(d)) return;
     DANH_MUC_HIENTAI = d.danhMuc || [];
     $('topTenTruong').textContent = d.meta.TEN_TRUONG;
