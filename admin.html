@@ -657,17 +657,18 @@ function trySmis(rows){
   const h1 = rows[h], h2 = rows[h + 1] || [];
   let nhom = ''; // nhớ nhãn nhóm (ĐĐGtx trải trên nhiều cột con 1..5)
   const headers = h1.map((c, i) => {
-    const a = String(c || '').replace(/\n/g, '').trim();
+    // an toàn cả LF lẫn CRLF: SMIS đôi khi ngắt dòng trong ô bằng \r\n
+    const a = String(c || '').replace(/\r|\n/g, '').trim();
     const b = String(h2[i] || '').trim();
     if (a) nhom = a;
-    const g = a || (/^\d+$/.test(b) ? nhom : '');
-    if (/gtx/i.test(g)) return /^\d+$/.test(b) ? 'TX ' + b : 'TX';
-    if (/ĐĐG.{0,2}gk/i.test(g)) return 'Giữa kỳ';
-    if (/ĐĐG.{0,2}ck/i.test(g)) return 'Cuối kỳ';
-    if (/ĐTBmhk1/i.test(g)) return 'TB HK1';
-    if (/ĐTBmhk2/i.test(g)) return 'TB HK2';
-    if (/ĐTBmcn/i.test(g)) return 'TB cả năm';
-    if (/Nhận xét/i.test(g)) return '';
+    const g = String(a || (/^\d+$/.test(b) ? nhom : '')).toLowerCase().replace(/\s+/g, '');
+    if (g.includes('gtx')) return /^\d+$/.test(b) ? 'Đánh giá thường xuyên ' + b : 'Đánh giá thường xuyên';
+    if (g.includes('gk')) return 'Giữa kỳ';
+    if (g.includes('ck')) return 'Cuối kỳ';
+    if (g.includes('tbmhk1')) return 'TB HK1';
+    if (g.includes('tbmhk2')) return 'TB HK2';
+    if (g.includes('tbmcn')) return 'TB cả năm';
+    if (g.includes('nhậnxét') || g.includes('nhanxet')) return '';
     return a;
   });
   const colMa = headers.findIndex(t => /Mã định danh/.test(t));
@@ -684,7 +685,7 @@ function smisThanhRows(t){
     const diem = [];
     t.headers.forEach((hd, i) => {
       if (!hd || i === t.colMa || i === colTen || i === colNs) return;
-      if (!/^(TX \d+|TX$|Giữa kỳ|Cuối kỳ|TB )/.test(hd)) return;
+      if (!/^(Đánh giá thường xuyên|TX|Giữa kỳ|Cuối kỳ|TB )/.test(hd)) return;
       const v = String(r[i] ?? '').trim();
       if (v !== '') diem.push({ loaiDiem: hd, diemSo: v });
     });
@@ -753,7 +754,7 @@ function hienSmis(){
 
   // xem trước bảng đầu tiên
   const t0 = smisTables[0];
-  const muc = ['TX 1','TX 2','TX 3','TX 4','TX 5','Giữa kỳ','Cuối kỳ','TB HK1','TB cả năm'];
+  const muc = ['Đánh giá thường xuyên 1','Đánh giá thường xuyên 2','Đánh giá thường xuyên 3','Đánh giá thường xuyên 4','Đánh giá thường xuyên 5','Giữa kỳ','Cuối kỳ','TB HK1','TB cả năm'];
   const seCot = [t0.colMa, t0.headers.findIndex(x => /Họ và tên/.test(x))].concat(
     muc.map(m => t0.headers.indexOf(m)).filter(i => i >= 0));
   let p = '<thead><tr>' + seCot.map(i => `<th>${esc(t0.headers[i])}</th>`).join('') + '</tr></thead><tbody>';
