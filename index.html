@@ -544,20 +544,19 @@ function renderResult(payload){
   cacMon.forEach(({ name, items }) => {
     nSubjects++;
 
-    // TB môn (bỏ qua với môn Đạt/Chưa đạt)
+    // TBM môn — một chip duy nhất "TBM: điểm" (bỏ qua với môn Đạt/Chưa đạt)
     const laMonDC = MON_DAT_CHUA_DAT.includes(chuanHoaMonJs(name));
     let avgChip = '';
     if (!laMonDC){
       const est = estimateSubjectAvg(items);
       if (est){
         const c = classifyScore(est.value.toFixed(1));
-        if (est.official){
-          avgChip = `<span class="subject-avg ${c.cls}" title="Điểm TB chính thức theo sổ điểm SMIS">TB: ${est.value.toFixed(1)}</span>`;
-        } else if (est.duCot){
-          avgChip = `<span class="subject-avg ${c.cls}" title="Đủ cột GK + CK — tính theo Thông tư 22/2021: (ΣTX + 2×GK + 3×CK) ÷ (số TX + 5)">TB: ${est.value.toFixed(1)}</span>`;
-        } else {
-          avgChip = `<span class="subject-avg a" title="TB DỰ KIẾN theo TT22 trên các cột đã có (chưa đủ GK/CK) — điểm chính thức chỉ tính khi đủ cột">Dự kiến: ${est.value.toFixed(1)}</span>`;
-        }
+        const title = est.official
+          ? 'Điểm TB môn chính thức theo sổ điểm SMIS'
+          : (est.duCot
+              ? 'Tính theo TT 22/2021: (ΣTX + 2×GK + 3×CK) ÷ (số TX + 5)'
+              : 'Tính theo TT 22/2021 trên các cột điểm đã có (chưa đủ GK/CK)');
+        avgChip = `<span class="subject-avg ${c.cls}" title="${title}">TBM: ${est.value.toFixed(1)}</span>`;
       }
     }
 
