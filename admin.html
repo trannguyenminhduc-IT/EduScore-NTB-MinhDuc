@@ -212,6 +212,32 @@ footer{text-align:center;padding:18px;font-size:11.5px;color:var(--slate-400)}
       </div>
     </div>
 
+    <!-- GVCN theo lớp -->
+    <div class="card">
+      <h2>🧑‍🏫 Giáo viên chủ nhiệm theo lớp</h2>
+      <div class="sub">Danh sách này hiển thị trên kết quả tra cứu của học sinh. Cách nhanh nhất: xuất bảng phân công chủ nhiệm (từ SMIS hoặc file trường đang dùng) rồi thả vào khung bên dưới — hệ thống tự tìm cột Lớp + Giáo viên chủ nhiệm.</div>
+      <div class="file-zone" style="padding:14px 16px;margin-bottom:10px" onclick="document.getElementById('gvcnFile').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <div class="t" style="font-size:13px">Đưa file Excel phân công chủ nhiệm vào</div>
+        <div class="s">Nhận .xlsx / .csv — tự nhận cột, đổ vào ô bên dưới để kiểm tra</div>
+        <input type="file" id="gvcnFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="docFileGvcn(this.files[0])">
+      </div>
+      <textarea id="gvcnText" rows="7" placeholder="8A1 - Nguyễn Văn A&#10;8A2 - Trần Thị B&#10;8A3 - Lê Văn C&#10;...&#10;(phân cách giữa lớp và tên bằng dấu -, dấu phẩy, chấm phẩy hoặc hai chấm)" style="width:100%;padding:10px 12px;border:1.5px solid var(--slate-200);border-radius:9px;font-family:inherit;font-size:13.5px"></textarea>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="btnGvcn" onclick="luuGvcn()">Lưu danh sách GVCN</button>
+        <span class="help" id="gvcnHelp"></span>
+      </div>
+    </div>
+
+    <!-- Vùng nguy hiểm -->
+    <div class="card" style="border-color:#fecaca">
+      <h2 style="color:var(--red-600)">🗑️ Vùng thao tác nguy hiểm</h2>
+      <div class="sub">Xóa TOÀN BỘ điểm của TẤT CẢ học sinh trong hệ thống (tab DIEM_TONG). Hồ sơ học sinh được giữ lại. Hành động <b>không thể hoàn tác</b> — hãy sao lưu Sheet trước khi bấm.</div>
+      <div class="form-actions">
+        <button class="btn btn-danger" id="btnXoaDiem" onclick="xoaToanBoDiem()">Xóa toàn bộ điểm học sinh</button>
+      </div>
+    </div>
+
     <!-- Danh mục -->
     <div class="card">
       <h2>🗂️ Danh mục khối → lớp → môn</h2>
@@ -336,11 +362,12 @@ footer{text-align:center;padding:18px;font-size:11.5px;color:var(--slate-400)}
 
 <div class="toast" id="toast"></div>
 
+<script src="cau-hinh.js"></script>
 <script>
 /* ================= CẤU HÌNH ================= */
 const CONFIG = {
-  // URL Web App Apps Script (đã cấu hình)
-  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbx1WuVMEvFoGInwT12gYEdr3B2uidT4_yrD1-4Q60Khv_yDg6XZ2J6qXy4b-iOkgxQ/exec",
+  // URL máy chủ nằm trong file cau-hinh.js — sửa ở đó khi cần
+  SCRIPT_URL: (window.CAU_HINH && window.CAU_HINH.SCRIPT_URL) || "",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -439,6 +466,7 @@ async function taiDuLieu(){
     $('cHocKy').value = d.meta.HOC_KY || '';
     $('cHocKyLoc').value = d.meta.HOC_KY_LOC || 'HK1';
     $('cGhiChu').value = d.meta.GHI_CHU || '';
+    if (d.gvcnText !== undefined) $('gvcnText').value = d.gvcnText || '';
     veBangDanhMuc();
   } catch (e){
     toast('err', 'Không tải được dữ liệu. Kiểm tra kết nối và thử lại (F5).');
@@ -548,6 +576,90 @@ async function dongBoNgay(){
     btn.disabled = false;
     $('btnSyncLabel').textContent = 'Đồng bộ ngay';
   }
+}
+
+/* ================= GVCN THEO LỚP ================= */
+
+/** Bỏ dấu tiếng Việt để so khớp tiêu đề cột không phụ thuộc dấu */
+function boDauGvcn(s){
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
+/** Đọc file Excel/CSV phân công chủ nhiệm → tự tìm cột Lớp + GVCN → đổ vào ô nhập */
+async function docFileGvcn(file){
+  if (!file) return;
+  try {
+    let rows;
+    if (/\.(xlsx|xls)$/i.test(file.name)){
+      if (typeof XLSX === 'undefined' || window.__khongXlsx){
+        toast('err', 'Không tải được thư viện đọc Excel — hãy dán thủ công vào ô bên dưới.');
+        return;
+      }
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', raw: false });
+      rows = sheetThanhRows(wb.Sheets[wb.SheetNames[0]]); // kèm sửa ref như file SMIS
+    } else {
+      rows = parseCsv(await file.text()).map(r => r.map(c => String(c ?? '').trim()));
+    }
+
+    // Tìm dòng tiêu đề chứa cả cột "Lớp" và cột GVCN (trong 15 dòng đầu)
+    let h = -1, colLop = -1, colGv = -1;
+    for (let i = 0; i < Math.min(rows.length, 15); i++){
+      let l = -1, g = -1;
+      rows[i].forEach(function (cRaw, cIdx){
+        const s = boDauGvcn(cRaw).toLowerCase().replace(/\s+/g, ' ').trim();
+        if (l === -1 && (/^lop$/.test(s) || /^ten lop$/.test(s) || /^lop hoc$/.test(s))) l = cIdx;
+        if (g === -1 && (s.includes('chu nhiem') || s.startsWith('gvcn')) && !s.includes('kiem')) g = cIdx;
+      });
+      if (l !== -1 && g !== -1){ h = i; colLop = l; colGv = g; break; }
+    }
+    if (h === -1){
+      toast('err', 'Không tìm thấy cột “Lớp” và “Giáo viên chủ nhiệm” — hãy dán thủ công theo mẫu.');
+      return;
+    }
+
+    const dong = [];
+    for (let i = h + 1; i < rows.length; i++){
+      const lop = String(rows[i][colLop] || '').replace(/^lớp\s*/i, '').trim();
+      const gv = String(rows[i][colGv] || '').replace(/\s+/g, ' ').trim();
+      if (lop && gv && /\d/.test(lop) && !/^tổng/.test(boDauGvcn(lop).toLowerCase())) dong.push(lop + ' - ' + gv);
+    }
+    if (!dong.length){
+      toast('err', 'File không có dòng lớp – GVCN nào hợp lệ.');
+      return;
+    }
+    dong.sort(function (a, b){ return a.localeCompare(b, 'vi', { numeric: true }); });
+    $('gvcnText').value = dong.join('\n');
+    $('gvcnHelp').textContent = 'Đã nhận ' + dong.length + ' lớp từ file — kiểm tra rồi bấm Lưu.';
+    toast('ok', 'Đã nhận diện ' + dong.length + ' lớp từ file.');
+  } catch (e){
+    console.error(e);
+    toast('err', 'Không đọc được file: ' + e.message);
+  }
+}
+
+async function luuGvcn(){
+  const text = $('gvcnText').value.trim();
+  if (!text){ toast('err','Chưa có danh sách nào để lưu.'); return; }
+  $('btnGvcn').disabled = true;
+  try {
+    const res = await apiPost('gvcnSave', { text });
+    if (xuLyKetQua(res)) toast('ok', res.msg || 'Đã lưu danh sách GVCN.');
+  } catch(e){ toast('err','Không kết nối được máy chủ.'); }
+  finally { $('btnGvcn').disabled = false; }
+}
+
+/* ================= XÓA TOÀN BỘ ĐIỂM ================= */
+async function xoaToanBoDiem(){
+  if (!confirm('XÓA TOÀN BỘ điểm của TẤT CẢ học sinh?\nToàn bộ điểm trong hệ thống sẽ bị xóa và KHÔNG THỂ hoàn tác!\n(Hồ sơ học sinh được giữ lại)')) return;
+  if (!confirm('Xác nhận lần cuối: bạn đã sao lưu dữ liệu chưa? Bấm OK để XÓA.')) return;
+  const btn = $('btnXoaDiem');
+  btn.disabled = true;
+  try {
+    const res = await apiPost('xoaToanBoDiem', {});
+    if (xuLyKetQua(res)) taiDuLieu();
+  } catch(e){ toast('err','Không kết nối được máy chủ.'); }
+  finally { btn.disabled = false; }
 }
 
 async function luuCauHinh(){
@@ -1038,6 +1150,12 @@ async function demoApi(action, getParams, postData){
   }
   if (action === 'changePassword'){
     return { ok:true, msg:'(Demo) Đã đổi mật khẩu.' };
+  }
+  if (action === 'gvcnSave'){
+    return { ok:true, msg:'(Demo) Đã lưu danh sách GVCN.' };
+  }
+  if (action === 'xoaToanBoDiem'){
+    return { ok:true, msg:'(Demo) Đã xóa toàn bộ điểm.' };
   }
   if (action === 'napDiem'){
     const d = parse(postData.data);

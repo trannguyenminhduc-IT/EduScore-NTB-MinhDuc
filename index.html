@@ -170,7 +170,7 @@ body{
 .updated-chip{font-size:12px;color:var(--slate-500);display:inline-flex;align-items:center;gap:6px}
 .updated-chip svg{width:13px;height:13px}
 
-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
 .stat-box{
   background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius-sm);
   padding:12px 8px;text-align:center;box-shadow:var(--shadow-card);
@@ -330,7 +330,6 @@ footer .disclaimer{font-size:11.5px;color:var(--slate-400);margin-top:10px;font-
 
     <div class="stats-row">
       <div class="stat-box b"><div class="stat-num" id="statSubjects">0</div><div class="stat-label">Môn có điểm</div></div>
-      <div class="stat-box g"><div class="stat-num" id="statAvg">—</div><div class="stat-label">Điểm TB chung (ước tính)</div></div>
       <div class="stat-box v"><div class="stat-num" id="statTerm">—</div><div class="stat-label">Học kỳ</div></div>
     </div>
 
@@ -357,13 +356,13 @@ footer .disclaimer{font-size:11.5px;color:var(--slate-400);margin-top:10px;font-
   <div class="disclaimer">Điểm hiển thị mang tính tham khảo. Kết quả chính thức được xác nhận theo sổ điểm do GVCN và nhà trường công bố.</div>
 </footer>
 
+<script src="cau-hinh.js"></script>
 <script>
 /* ==================================================================
-   CẤU HÌNH — CHỈNH SỬA DUY NHẤT Ở ĐÂY
+   CẤU HÌNH — URL máy chủ nằm trong file cau-hinh.js (sửa ở đó khi cần)
    ================================================================== */
 const CONFIG = {
-  // URL Web App Apps Script (đã cấu hình)
-  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbx1WuVMEvFoGInwT12gYEdr3B2uidT4_yrD1-4Q60Khv_yDg6XZ2J6qXy4b-iOkgxQ/exec",
+  SCRIPT_URL: (window.CAU_HINH && window.CAU_HINH.SCRIPT_URL) || "",
 
   SCHOOL_NAME: "Trường THCS Nguyễn Thái Bình",
   HOC_KY_LABEL: "Học kỳ 1 — Năm học 2026-2027", // nhãn học kỳ hiện tại (sẽ được nạp từ hệ thống nếu admin đã đặt)
@@ -455,6 +454,52 @@ function subjectEmoji(name){
 }
 
 /* ---------------- Hiển thị kết quả ---------------- */
+
+/* Thứ tự chuẩn các môn theo chương trình — dùng để sắp xếp trên trang */
+const DANH_SACH_MON_WEB = ['Toán', 'Ngữ văn', 'Ngoại ngữ 1', 'Ngoại ngữ 2', 'Ngoại ngữ 3',
+  'Giáo dục công dân', 'Công nghệ', 'Tin học', 'Khoa học tự nhiên',
+  'Lịch sử và Địa lý', 'Giáo dục thể chất', 'Nghệ thuật',
+  'Hoạt động trải nghiệm', 'Giáo dục địa phương', 'Giáo dục kinh tế và pháp luật'];
+
+/* Các môn đánh giá Đạt/Chưa đạt (không xét điểm theo hệ số) */
+const MON_DAT_CHUA_DAT = ['Giáo dục thể chất', 'Nghệ thuật', 'Hoạt động trải nghiệm', 'Giáo dục địa phương'];
+
+function boDauMon(s){
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+function chuanHoaMonJs(raw){
+  const k = boDauMon(raw).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const bang = {
+    'toan':'Toán','nguvan':'Ngữ văn','ngoaingu':'Ngoại ngữ 1','ngoaingu1':'Ngoại ngữ 1',
+    'ngoaingu2':'Ngoại ngữ 2','ngoaingu3':'Ngoại ngữ 3','nn1':'Ngoại ngữ 1','nn2':'Ngoại ngữ 2',
+    'gdcd':'Giáo dục công dân','giaoduccongdan':'Giáo dục công dân','congnghe':'Công nghệ',
+    'tinhoc':'Tin học','khtn':'Khoa học tự nhiên','khoahoctunhien':'Khoa học tự nhiên',
+    'lichsuvadiali':'Lịch sử và Địa lý','lichsuvadialy':'Lịch sử và Địa lý',
+    'gdtc':'Giáo dục thể chất','giaoducthechat':'Giáo dục thể chất','giaoductheechat':'Giáo dục thể chất',
+    'nghethuat':'Nghệ thuật','amnhac':'Nghệ thuật','mithuat':'Nghệ thuật',
+    'hdtn':'Hoạt động trải nghiệm','hoatdongtrainghiem':'Hoạt động trải nghiệm',
+    'hoatdongtrainghiemhuongnghiep':'Hoạt động trải nghiệm',
+    'gddp':'Giáo dục địa phương','giaoducdiaphuong':'Giáo dục địa phương',
+    'gdktpl':'Giáo dục kinh tế và pháp luật','giaoduckinhtephapluat':'Giáo dục kinh tế và pháp luật',
+    'giaoduckinhtevaphapluat':'Giáo dục kinh tế và pháp luật',
+  };
+  return bang[k] || String(raw || '').trim();
+}
+function thuTuMonWeb(ten){
+  const i = DANH_SACH_MON_WEB.indexOf(chuanHoaMonJs(ten));
+  return i === -1 ? 100 : i;
+}
+/* Hiển thị điểm của môn Đạt/Chưa đạt: chỉ "Đ" hoặc "CĐ" */
+function giaTriHienThi(mon, raw){
+  if (MON_DAT_CHUA_DAT.includes(chuanHoaMonJs(mon))){
+    const t = boDauMon(raw).toLowerCase();
+    if (t.startsWith('c') || t.includes('chua')) return { label: 'CĐ', cls: 'n' };
+    return { label: 'Đ', cls: 'n' };
+  }
+  return classifyScore(raw);
+}
+
 function renderResult(payload){
   const profile = payload.data.profile || {};
   const subjects = payload.data.subjects || {};
@@ -475,26 +520,31 @@ function renderResult(payload){
 
   $('updatedText').textContent = 'Dữ liệu: ' + (payload.capNhat || payload.hocKy || CONFIG.HOC_KY_LABEL);
 
-  // 2) Thống kê + lưới môn học
+  // 2) Lưới môn học — sắp xếp theo thứ tự chương trình
   const grid = $('subjectGrid'); grid.innerHTML = '';
-  let nSubjects = 0; const avgs = [];
+  let nSubjects = 0;
 
-  Object.keys(subjects).forEach(name => {
-    const items = (subjects[name]||[]).filter(it => it && String(it.diemSo??'').trim() !== '');
-    if (!items.length) return; // bỏ môn chưa có điểm
+  const cacMon = Object.keys(subjects)
+    .map(name => ({ name, items: (subjects[name]||[]).filter(it => it && String(it.diemSo??'').trim() !== '') }))
+    .filter(m => m.items.length)
+    .sort((A, B) => thuTuMonWeb(A.name) - thuTuMonWeb(B.name) || A.name.localeCompare(B.name, 'vi'));
+
+  cacMon.forEach(({ name, items }) => {
     nSubjects++;
 
-    // TB môn
-    const est = estimateSubjectAvg(items);
-    if (est){ avgs.push(est.value); }
+    // TB môn (bỏ qua với môn Đạt/Chưa đạt)
+    const laMonDC = MON_DAT_CHUA_DAT.includes(chuanHoaMonJs(name));
     let avgChip = '';
-    if (est){
-      const c = classifyScore(est.value.toFixed(1));
-      avgChip = `<span class="subject-avg ${c.cls}" title="${est.official?'Theo sổ điểm SMIS':'Ước tính theo TT22'}">TB: ${est.value.toFixed(1)}</span>`;
+    if (!laMonDC){
+      const est = estimateSubjectAvg(items);
+      if (est){
+        const c = classifyScore(est.value.toFixed(1));
+        avgChip = `<span class="subject-avg ${c.cls}" title="${est.official?'Theo sổ điểm SMIS':'Ước tính theo TT22'}">TB: ${est.value.toFixed(1)}</span>`;
+      }
     }
 
     const rows = items.map(it => {
-      const c = classifyScore(it.diemSo);
+      const c = giaTriHienThi(name, it.diemSo);
       if (!c) return '';
       const isTB = kindOf(it.loaiDiem) === 'TB';
       return `<div class="score-row ${isTB?'official':''}">
@@ -519,7 +569,6 @@ function renderResult(payload){
   }
 
   $('statSubjects').textContent = nSubjects;
-  $('statAvg').textContent = avgs.length ? (avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2) : '—';
   $('statTerm').textContent = /2/.test(payload.hocKy||CONFIG.HOC_KY_LABEL) && /học kỳ 2|học kì 2/i.test(payload.hocKy||CONFIG.HOC_KY_LABEL) ? 'HK2' : 'HK1';
 
   $('result').style.display = 'block';

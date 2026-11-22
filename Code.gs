@@ -43,6 +43,7 @@ const TAB = {
   DIEM_TONG: 'DIEM_TONG',  // Khoi|Lop|Mon|GiaoVien|HocKy|MaDinhDanh|HoTen|LoaiDiem|DiemSo|CapNhat
   HOSO:      'HOSO',       // MaDinhDanh|HoTen|NgaySinh|Lop|GVCN
   META:      'META',       // Khoa|GiaTri
+  GVCN:      'GVCN',       // Lop|GVCN — danh sách giáo viên chủ nhiệm theo lớp
 };
 
 const CAU_HINH_MAC_DINH = {
@@ -85,6 +86,8 @@ function doPost(e) {
       case 'syncNow':        return json(canBo(p.token, dongBoTatCa));
       case 'napDiem':        return json(canBo(p.token, () => napDiemTuFile(anJson(p.data))));
       case 'changePassword': return json(canBo(p.token, () => doiMatKhau(p.oldPw || '', p.newPw || '')));
+      case 'gvcnSave':       return json(canBo(p.token, () => luuGvcn(p.text || '')));
+      case 'xoaToanBoDiem':  return json(canBo(p.token, xoaToanBoDiem));
       default: return json({ error: 'Không rõ yêu cầu.' });
     }
   } catch (err) {
@@ -128,13 +131,19 @@ function docDiemTong(ss, id, hocKyLoc) {
     if (normId(r['MaDinhDanh'] || '') !== id) return;
     const hk = r['HocKy'] || '';
     if (hocKyLoc && hk && hk !== hocKyLoc) return;
-    const mon = r['Mon'] || 'Khác';
+    const mon = chuanHoaMon(r['Mon']) || 'Khác';
     const diem = r['DiemSo'] || '';
     if (diem === '' && !(r['LoaiDiem'] || '')) return;
     if (!subjects[mon]) subjects[mon] = [];
     subjects[mon].push({ loaiDiem: r['LoaiDiem'] || 'Điểm', diemSo: diem });
   });
-  return subjects;
+  // Trả về theo đúng thứ tự môn chương trình (kể cả với dữ liệu cũ đã lưu)
+  const sapXep = Object.keys(subjects).sort(function (a, b) {
+    return thuTuMon(a) - thuTuMon(b) || a.localeCompare(b, 'vi');
+  });
+  const ketQua = {};
+  sapXep.forEach(function (m) { ketQua[m] = subjects[m]; });
+  return ketQua;
 }
 
 function timHocSinh(ss, id) {
@@ -146,8 +155,59 @@ function timHocSinh(ss, id) {
   if (row['NgaySinh']) p['Ngày sinh'] = row['NgaySinh'];
   if (row['Lop'])      p['Lớp'] = row['Lop'];
   if (row['GVCN'])     p['GVCN'] = row['GVCN'];
+  if (!p['GVCN'] && p['Lớp']) {
+    const gvcn = docGvcn(ss)[p['Lớp']];
+    if (gvcn) p['GVCN'] = gvcn;
+  }
   p['Mã định danh'] = row['MaDinhDanh'] || id;
   return p;
+}
+
+/* ---- Danh sách GVCN theo lớp (tab GVCN: Lop|GVCN) ---- */
+
+function docGvcn(ss) {
+  const map = {};
+  docSheet(ss, TAB.GVCN).forEach(function (r) {
+    const lop = String(r['Lop'] || '').trim();
+    if (lop) map[lop] = String(r['GVCN'] || '').trim();
+  });
+  return map;
+}
+
+/** Nhận văn bản nhiều dòng dạng "8A1 - Trần Văn B" (phân cách bởi - , ; :) */
+function luuGvcn(text) {
+  const ss = moSheet();
+  const sh = taoTabVoiHeader(ss, TAB.GVCN, ['Lop', 'GVCN']);
+  const dong = [];
+  String(text || '').split(/\r?\n/).forEach(function (line) {
+    if (!line.trim()) return;
+    const parts = line.split(/[-,;:]/);
+    const lop = String(parts[0] || '').trim();
+    const gv = String(parts.slice(1).join('-') || '').trim();
+    if (lop && gv) dong.push([lop, gv]);
+  });
+  sh.clearContents();
+  sh.getRange(1, 1, 1, 2).setValues([['Lop', 'GVCN']]);
+  sh.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#dbeafe');
+  if (dong.length) sh.getRange(2, 1, dong.length, 2).setValues(dong);
+  sh.setFrozenRows(1);
+  bumpTheHe();
+  return { ok: true, msg: 'Đã lưu danh sách GVCN cho ' + dong.length + ' lớp.', soLop: dong.length };
+}
+
+/** Xóa toàn bộ điểm (tab DIEM_TONG) — giữ lại hồ sơ học sinh */
+function xoaToanBoDiem() {
+  const ss = moSheet();
+  const shDt = ss.getSheetByName(TAB.DIEM_TONG);
+  if (shDt) {
+    shDt.clearContents();
+    shDt.getRange(1, 1, 1, 10).setValues([['Khoi', 'Lop', 'Mon', 'GiaoVien', 'HocKy', 'MaDinhDanh', 'HoTen', 'LoaiDiem', 'DiemSo', 'CapNhat']]);
+    shDt.getRange(1, 1, 1, 10).setFontWeight('bold').setBackground('#dbeafe');
+    shDt.setFrozenRows(1);
+  }
+  bumpTheHe();
+  ghiMeta(ss, 'CAP_NHAT', Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm') + ' (đã xóa toàn bộ điểm)');
+  return { ok: true, msg: 'Đã xóa TOÀN BỘ điểm. Hồ sơ học sinh (HOSO) được giữ nguyên.' };
 }
 
 /* ========================= 2) CẤU HÌNH CÔNG KHAI ========================= */
@@ -229,6 +289,12 @@ function layDashboard() {
       CAP_NHAT: meta.CAP_NHAT || '',
     },
     sheetUrl: 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit',
+    gvcnText: (function () {
+      const m = docGvcn(ss);
+      return Object.keys(m).sort(function (a, b) {
+        return String(a).localeCompare(String(b), 'vi', { numeric: true });
+      }).map(function (l) { return l + ' - ' + m[l]; }).join('\n');
+    })(),
     thongKe: {
       soKhoi: Object.keys(khois).length,
       soLop: Object.keys(lops).length,
@@ -258,7 +324,7 @@ function napDiemTuFile(d) {
     const ma = normId(it.ma || '');
     if (!ma) return;
     const lop = String(it.lop || d.lop || '').trim();
-    const mon = String(it.mon || d.mon || '').trim();
+    const mon = chuanHoaMon(String(it.mon || d.mon || ''));
     if (!lop || !mon) return;
     const hocKy = String(it.hocKy || d.hocKy || 'HK1').trim();
     nhomThayThe[lop + '|' + mon + '|' + hocKy] = 1;
@@ -271,7 +337,8 @@ function napDiemTuFile(d) {
   });
   if (!hangMoi.length) return { error: 'Không đọc được dòng điểm nào hợp lệ (thiếu Mã định danh / Lớp / Môn / giá trị điểm).' };
 
-  const shDt = ss.getSheetByName(TAB.DIEM_TONG);
+  // Tự tạo tab kho điểm nếu chưa tồn tại (chống lỗi khi chưa chạy caiDatHeThong)
+  const shDt = taoTabVoiHeader(ss, TAB.DIEM_TONG, ['Khoi', 'Lop', 'Mon', 'GiaoVien', 'HocKy', 'MaDinhDanh', 'HoTen', 'LoaiDiem', 'DiemSo', 'CapNhat']);
   let vals = shDt.getLastRow() > 1 ? shDt.getRange(2, 1, shDt.getLastRow() - 1, 10).getValues() : [];
   if ((d.cheDo || 'thay') === 'thay') {
     const thay = nhomThayThe;
@@ -306,7 +373,7 @@ function napDiemTuFile(d) {
 
 /** Như upsertHoso nhưng dòng đã tự kèm lớp (bố cục dài có thể nhiều lớp trong 1 file) */
 function upsertHosoDaCoLop(ss, items) {
-  const sh = ss.getSheetByName(TAB.HOSO);
+  const sh = taoTabVoiHeader(ss, TAB.HOSO, ['MaDinhDanh', 'HoTen', 'NgaySinh', 'Lop', 'GVCN']);
   const vals = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues() : [];
   const chiSo = {};
   vals.forEach(function (r, i) { chiSo[normId(r[0])] = i; });
@@ -463,19 +530,20 @@ function dongBoBlock(ss, tabName) {
   // 1) Đọc tab GV dạng lưới sổ điểm
   const items = docTabGiaoVien(sh);
   const capNhat = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm');
+  const monChuan = chuanHoaMon(dm['Mon']);
   const hangMoi = [];
   items.forEach(function (it) {
     it.diem.forEach(function (d) {
-      hangMoi.push([dm['Khoi'], dm['Lop'], dm['Mon'], dm['GiaoVien'], dm['HocKy'],
+      hangMoi.push([dm['Khoi'], dm['Lop'], monChuan, dm['GiaoVien'], dm['HocKy'],
                     it.ma, it.hoTen, d.loaiDiem, d.diemSo, capNhat]);
     });
   });
 
   // 2) Thay khối cũ của (Lop, Mon, HocKy) trong DIEM_TONG rồi sắp xếp lại toàn bộ
-  const shDt = ss.getSheetByName(TAB.DIEM_TONG);
+  const shDt = taoTabVoiHeader(ss, TAB.DIEM_TONG, ['Khoi', 'Lop', 'Mon', 'GiaoVien', 'HocKy', 'MaDinhDanh', 'HoTen', 'LoaiDiem', 'DiemSo', 'CapNhat']);
   let vals = shDt.getLastRow() > 1 ? shDt.getRange(2, 1, shDt.getLastRow() - 1, 10).getValues() : [];
   vals = vals.filter(function (r) {
-    return !(String(r[1]).trim() === dm['Lop'] && String(r[2]).trim() === dm['Mon'] && String(r[4]).trim() === dm['HocKy']);
+    return !(String(r[1]).trim() === dm['Lop'] && chuanHoaMon(String(r[2])) === monChuan && String(r[4]).trim() === dm['HocKy']);
   });
   vals = vals.concat(hangMoi).sort(soSanhHangDiem);
   shDt.clearContents();
@@ -493,14 +561,69 @@ function dongBoBlock(ss, tabName) {
   return { ok: true, soHang: hangMoi.length };
 }
 
-/** So sánh để sắp xếp: KHỐI → LỚP → MÔN → HỌC KỲ */
+/** Thứ tự chuẩn các môn theo chương trình (dùng để sắp xếp) */
+const DANH_SACH_MON = ['Toán', 'Ngữ văn', 'Ngoại ngữ 1', 'Ngoại ngữ 2', 'Ngoại ngữ 3',
+  'Giáo dục công dân', 'Công nghệ', 'Tin học', 'Khoa học tự nhiên',
+  'Lịch sử và Địa lý', 'Giáo dục thể chất', 'Nghệ thuật',
+  'Hoạt động trải nghiệm', 'Giáo dục địa phương', 'Giáo dục kinh tế và pháp luật'];
+
+/** Bỏ dấu tiếng Việt (để so khớp tên môn không phụ thuộc dấu/chữ hoa/cách viết liền) */
+function boDau(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
+/** Chuẩn hóa tên môn về tên hiển thị chuẩn: "Ngoạingữ1", "NGOẠI NGỮ 1", "NN1"... → "Ngoại ngữ 1" */
+function chuanHoaMon(raw) {
+  const k = boDau(raw).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const bang = {
+    'toan': 'Toán',
+    'nguvan': 'Ngữ văn',
+    'ngoaingu': 'Ngoại ngữ 1',
+    'ngoaingu1': 'Ngoại ngữ 1',
+    'ngoaingu2': 'Ngoại ngữ 2',
+    'ngoaingu3': 'Ngoại ngữ 3',
+    'nn1': 'Ngoại ngữ 1',
+    'nn2': 'Ngoại ngữ 2',
+    'gdcd': 'Giáo dục công dân',
+    'giaoduccongdan': 'Giáo dục công dân',
+    'congnghe': 'Công nghệ',
+    'tinhoc': 'Tin học',
+    'khtn': 'Khoa học tự nhiên',
+    'khoahoctunhien': 'Khoa học tự nhiên',
+    'lichsuvadiali': 'Lịch sử và Địa lý',
+    'lichsuvadialy': 'Lịch sử và Địa lý',
+    'gdtc': 'Giáo dục thể chất',
+    'giaoducthechat': 'Giáo dục thể chất',
+    'giaoductheechat': 'Giáo dục thể chất',
+    'nghethuat': 'Nghệ thuật',
+    'amnhac': 'Nghệ thuật', 'mithuat': 'Nghệ thuật',
+    'hdtn': 'Hoạt động trải nghiệm',
+    'hoatdongtrainghiem': 'Hoạt động trải nghiệm',
+    'hoatdongtrainghiemhuongnghiep': 'Hoạt động trải nghiệm',
+    'gddp': 'Giáo dục địa phương',
+    'giaoducdiaphuong': 'Giáo dục địa phương',
+    'gdktpl': 'Giáo dục kinh tế và pháp luật',
+    'giaoduckinhtephapluat': 'Giáo dục kinh tế và pháp luật',
+    'giaoduckinhtevaphapluat': 'Giáo dục kinh tế và pháp luật',
+  };
+  return bang[k] || String(raw || '').trim();
+}
+
+/** Vị trí sắp xếp của một môn (môn lạ xếp sau cùng, giữ tên gốc) */
+function thuTuMon(ten) {
+  const i = DANH_SACH_MON.indexOf(chuanHoaMon(ten));
+  return i === -1 ? 100 : i;
+}
+
+/** So sánh để sắp xếp: KHỐI → LỚP → MÔN (theo thứ tự chương trình) → HỌC KỲ */
 function soSanhHangDiem(a, b) {
   const ka = parseInt(a[0], 10) || 0, kb = parseInt(b[0], 10) || 0;
   if (ka !== kb) return ka - kb;
   const l = String(a[1]).localeCompare(String(b[1]), 'vi', { numeric: true });
   if (l) return l;
-  const m = String(a[2]).localeCompare(String(b[2]), 'vi');
-  if (m) return m;
+  const ma = thuTuMon(a[2]), mb = thuTuMon(b[2]);
+  if (ma !== mb) return ma - mb;
   return String(a[4]).localeCompare(String(b[4]));
 }
 
@@ -534,7 +657,7 @@ function docTabGiaoVien(sh) {
 }
 
 function upsertHoso(ss, items, lop) {
-  const sh = ss.getSheetByName(TAB.HOSO);
+  const sh = taoTabVoiHeader(ss, TAB.HOSO, ['MaDinhDanh', 'HoTen', 'NgaySinh', 'Lop', 'GVCN']);
   const vals = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues() : [];
   const chiSo = {};
   vals.forEach(function (r, i) { chiSo[normId(r[0])] = i; });
@@ -564,10 +687,10 @@ function upsertHoso(ss, items, lop) {
 function xoaKhoiDiem(ss, tabName) {
   const dm = docDanhMuc(ss).filter(function (r) { return r['TabName'] === tabName; })[0];
   const shDt = ss.getSheetByName(TAB.DIEM_TONG);
-  if (!dm || shDt.getLastRow() < 2) return;
+  if (!dm || !shDt || shDt.getLastRow() < 2) return;
   let vals = shDt.getRange(2, 1, shDt.getLastRow() - 1, 10).getValues();
   vals = vals.filter(function (r) {
-    return !(String(r[1]).trim() === dm['Lop'] && String(r[2]).trim() === dm['Mon'] && String(r[4]).trim() === dm['HocKy']);
+    return !(String(r[1]).trim() === dm['Lop'] && chuanHoaMon(String(r[2])) === chuanHoaMon(dm['Mon']) && String(r[4]).trim() === dm['HocKy']);
   });
   shDt.clearContents();
   shDt.getRange(1, 1, 1, 10).setValues([['Khoi', 'Lop', 'Mon', 'GiaoVien', 'HocKy', 'MaDinhDanh', 'HoTen', 'LoaiDiem', 'DiemSo', 'CapNhat']]);
