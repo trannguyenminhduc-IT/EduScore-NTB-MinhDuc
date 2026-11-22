@@ -9,5 +9,5 @@
      rồi upload lên GitHub là xong.
    ================================================================== */
 window.CAU_HINH = {
-  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzlD8Qr1sZW84pDkxe33RbF_5tI9ApklhSRscb2_Wgqx4qHlWyZ9n8gKhVV4srNxODy/exec",
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwHLQq8zV4cj59BDS1l9h8sAAqw4-wt7KPcmbxHPrFAvzm9_Fcl7V4uFDvTuws9kP_r/exec",
 };
