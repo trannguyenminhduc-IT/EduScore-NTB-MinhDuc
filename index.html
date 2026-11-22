@@ -413,7 +413,12 @@ function kindOf(loaiDiem){
   return 'TX';
 }
 
-// TB môn ước tính theo TT22: (ΣTX + GK + 2×CK) / (số TX + 3)
+// TB môn theo Thông tư 22/2021/TT-BGDĐT (chương trình GDPT 2018):
+//   ĐTBmhk = (ΣĐĐGtx + 2×ĐĐGgk + 3×ĐĐGck) / (số ĐĐGtx + 5)
+// - Môn nhận xét (Đ/CĐ) không tính TB — đã loại trước khi gọi hàm.
+// - Chưa đủ cột GK/CK: vẫn tính "DỰ KIẾN" trên các cột đã có (đúng trọng số),
+//   để học sinh biết mình đang đứng đâu; điểm chính thức tính khi đủ cột.
+// - Nếu SMIS có sẵn dòng TB (ĐTBmhk1/2) thì dùng số chính thức đó.
 function estimateSubjectAvg(items){
   const tx=[], gk=[], ck=[]; let official = null;
   items.forEach(it => {
@@ -425,20 +430,17 @@ function estimateSubjectAvg(items){
     else if (k === 'GK' && c.num !== undefined) gk.push(c.num);
     else if (c.num !== undefined) tx.push(c.num);
   });
-  if (official !== null) return {value:official, official:true};
-  if (ck.length){ // có thi cuối kỳ → công thức đầy đủ
-    const g = gk[0] ?? null;
-    const sum = tx.reduce((a,b)=>a+b,0) + (g ?? 0) + 2*ck[ck.length-1];
-    const div = tx.length + 1 + 2;
-    if (g === null){ // thiếu GK: chỉ tính những gì có
-      const s2 = tx.reduce((a,b)=>a+b,0) + 2*ck[ck.length-1];
-      return {value: s2/(tx.length+2), official:false};
-    }
-    return {value: sum/div, official:false};
-  }
-  const all = [...tx, ...gk];
-  if (!all.length) return null;
-  return {value: all.reduce((a,b)=>a+b,0)/all.length, official:false};
+  if (official !== null) return { value: official, official: true, duCot: true };
+
+  let num = tx.reduce((a,b)=>a+b,0), den = tx.length;
+  if (gk.length){ num += 2 * gk[0]; den += 2; }   // giữa kỳ hệ số 2
+  if (ck.length){ num += 3 * ck[ck.length-1]; den += 3; } // cuối kỳ hệ số 3
+  if (!den) return null;
+  return {
+    value: Math.round((num / den) * 10) / 10, // làm tròn đến 1 chữ số thập phân
+    official: false,
+    duCot: gk.length > 0 && ck.length > 0, // đủ cả GK lẫn CK → công thức đầy đủ
+  };
 }
 
 const SUBJECT_EMOJI = {
@@ -549,7 +551,13 @@ function renderResult(payload){
       const est = estimateSubjectAvg(items);
       if (est){
         const c = classifyScore(est.value.toFixed(1));
-        avgChip = `<span class="subject-avg ${c.cls}" title="${est.official?'Theo sổ điểm SMIS':'Ước tính theo TT22'}">TB: ${est.value.toFixed(1)}</span>`;
+        if (est.official){
+          avgChip = `<span class="subject-avg ${c.cls}" title="Điểm TB chính thức theo sổ điểm SMIS">TB: ${est.value.toFixed(1)}</span>`;
+        } else if (est.duCot){
+          avgChip = `<span class="subject-avg ${c.cls}" title="Đủ cột GK + CK — tính theo Thông tư 22/2021: (ΣTX + 2×GK + 3×CK) ÷ (số TX + 5)">TB: ${est.value.toFixed(1)}</span>`;
+        } else {
+          avgChip = `<span class="subject-avg a" title="TB DỰ KIẾN theo TT22 trên các cột đã có (chưa đủ GK/CK) — điểm chính thức chỉ tính khi đủ cột">Dự kiến: ${est.value.toFixed(1)}</span>`;
+        }
       }
     }
 
