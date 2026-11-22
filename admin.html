@@ -722,6 +722,29 @@ function parseCsv(text){
 /* ---- Chế độ SMIS: nhận diện bảng điểm xuất từ SMIS (file ZIP nhiều lớp / 1 file nhiều sheet) ---- */
 let smisTables = null; // [{lop, mon, gv, hk, headers, rows, colMa}]
 
+/** Chuẩn hóa tên môn về tên hiển thị thống nhất (SMIS ghi nhiều kiểu: Ngoạingữ1 / NGOẠI NGỮ 1 / TIẾNG ANH...) */
+function chuanHoaMonNhap(raw){
+  const k = String(raw || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const bang = {
+    'toan':'Toán','nguvan':'Ngữ văn',
+    'tienganh':'Tiếng Anh','tienganh1':'Tiếng Anh',
+    'ngoaingu':'Tiếng Anh','ngoaingu1':'Tiếng Anh','nn1':'Tiếng Anh','anhvan':'Tiếng Anh',
+    'ngoaingu2':'Ngoại ngữ 2','ngoaingu3':'Ngoại ngữ 3','nn2':'Ngoại ngữ 2',
+    'gdcd':'Giáo dục công dân','giaoduccongdan':'Giáo dục công dân','congnghe':'Công nghệ',
+    'tinhoc':'Tin học','khtn':'Khoa học tự nhiên','khoahoctunhien':'Khoa học tự nhiên',
+    'lichsuvadiali':'Lịch sử và Địa lý','lichsuvadialy':'Lịch sử và Địa lý',
+    'gdtc':'Giáo dục thể chất','giaoducthechat':'Giáo dục thể chất','giaoductheechat':'Giáo dục thể chất',
+    'nghethuat':'Nghệ thuật','amnhac':'Nghệ thuật','mithuat':'Nghệ thuật',
+    'hdtn':'Hoạt động trải nghiệm','hoatdongtrainghiem':'Hoạt động trải nghiệm',
+    'hoatdongtrainghiemhuongnghiep':'Hoạt động trải nghiệm',
+    'gddp':'Giáo dục địa phương','giaoducdiaphuong':'Giáo dục địa phương',
+    'gdktpl':'Giáo dục kinh tế và pháp luật','giaoduckinhtephapluat':'Giáo dục kinh tế và pháp luật',
+    'giaoduckinhtevaphapluat':'Giáo dục kinh tế và pháp luật',
+  };
+  return bang[k] || String(raw || '').trim();
+}
+
 /**
  * File xuất từ SMIS ghi SAI thuộc tính dimension trong XML (VD "A1:R6" dù có
  * chục dòng điểm) khiến thư viện cắt mất dữ liệu. Hàm này quét lại toàn bộ ô
@@ -759,7 +782,7 @@ function trySmis(rows){
       if ((m = s.match(/Lớp\s*:\s*(.+)$/))) lop = m[1].trim();
       if ((m = s.match(/Môn học\s*:\s*(.+)$/))){
         const t = m[1].split(/\s*-\s*GV\s*:/);
-        mon = (t[0] || '').trim();
+        mon = chuanHoaMonNhap((t[0] || '').trim());
         gv = (t[1] || '').trim();
       }
       if (/Học kỳ\s*:\s*II/.test(s)) hk = 'HK2';
@@ -830,7 +853,11 @@ async function docZip(file){
         wb.SheetNames.forEach(sn => {
           const rows = sheetThanhRows(wb.Sheets[sn]);
           const t = trySmis(rows);
-          if (t){ if (!t.lop) t.lop = lopTuFile; tables.push(t); }
+          if (t){
+            if (!t.lop) t.lop = lopTuFile;
+            if (!t.mon) t.mon = chuanHoaMonNhap(sn); // dự phòng: thiếu dòng "Môn học" thì dùng tên sheet
+            tables.push(t);
+          }
         });
       }));
     });
