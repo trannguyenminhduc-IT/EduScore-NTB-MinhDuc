@@ -570,12 +570,16 @@ function renderResult(payload){
     gopMon[tenChuan].push(...items);
   });
 
-  const cacMon = Object.keys(gopMon)
-    .map(name => ({ name, items: gopMon[name] }))
-    .sort((A, B) => thuTuMonWeb(A.name) - thuTuMonWeb(B.name) || A.name.localeCompare(B.name, 'vi'));
+  // Luôn hiển thị đủ các môn chuẩn (kể cả môn chưa có điểm)
+  const MON_CO_BAN = DANH_SACH_MON_WEB.filter(n => !['Ngoại ngữ 2','Ngoại ngữ 3','Giáo dục kinh tế và pháp luật'].includes(n));
+  const cacMon = MON_CO_BAN.map(name => ({ name, items: gopMon[name] || [] }));
+  Object.keys(gopMon).forEach(name => {
+    if (!DANH_SACH_MON_WEB.includes(name)) cacMon.push({ name, items: gopMon[name] });
+  });
 
   cacMon.forEach(({ name, items }) => {
-    nSubjects++;
+    const coDiem = items && items.length > 0;
+    if (coDiem) nSubjects++;
 
     // TBM môn — một chip duy nhất "TBM: điểm" (bỏ qua với môn Đạt/Chưa đạt)
     const laMonDC = MON_DAT_CHUA_DAT.includes(chuanHoaMonJs(name));

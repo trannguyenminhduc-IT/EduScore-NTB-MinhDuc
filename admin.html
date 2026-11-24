@@ -438,6 +438,9 @@ async function taiDuLieu(){
     if (!xuLyKetQua(d)) return;
     DANH_MUC_HIENTAI = d.danhMuc || [];
     $('topTenTruong').textContent = d.meta.TEN_TRUONG;
+    $('stKhoi').textContent = d.thongKe.soKhoi;
+    $('stLop').textContent = d.thongKe.soLop;
+    $('stMon').textContent = d.thongKe.soMon;
     $('stHS').textContent = d.thongKe.soHocSinh;
     $('btnOpenSheet').href = d.sheetUrl || '#';
     // cấu hình

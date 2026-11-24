@@ -1048,6 +1048,16 @@ function metaNamHoc(ss) {
 function damBaoCotNamHoc(ss) {
   const sh = ss.getSheetByName(TAB.DIEM_TONG);
   if (!sh) return;
+  const meta = docMeta(ss);
+  if (meta.MIGRATED_NAMHOC === '1') {
+    // chỉ đảm bảo header tồn tại
+    if (sh.getLastColumn() < 11) {
+      sh.insertColumnsAfter(Math.max(sh.getLastColumn(), 1), 11 - sh.getLastColumn());
+    }
+    const h = String(sh.getRange(1, 11).getValue() || '').trim();
+    if (h !== 'NamHoc') sh.getRange(1, 11).setValue('NamHoc');
+    return;
+  }
   let lc = sh.getLastColumn();
   if (lc < 11) {
     sh.insertColumnsAfter(Math.max(lc, 1), 11 - lc);
@@ -1066,6 +1076,7 @@ function damBaoCotNamHoc(ss) {
     }
     if (changed) rng.setValues(vals);
   }
+  ghiMeta(ss, 'MIGRATED_NAMHOC', '1');
 }
 
 function damBaoCotGvcn(ss) {
