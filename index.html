@@ -594,12 +594,37 @@ function renderResult(payload){
       }
     }
 
-    const rows = items.map(it => {
+    // Chuẩn hóa tên cột điểm về 4 TX + GK + CK, giữ đúng vị trí (không dồn)
+    function chuanHoaNhanDiem(loai){
+      const s = String(loai || '').toLowerCase().replace(/\s+/g,' ');
+      if (/thường xuyên\s*1|\btx\s*1\b/.test(s)) return 'Đánh giá thường xuyên 1';
+      if (/thường xuyên\s*2|\btx\s*2\b/.test(s)) return 'Đánh giá thường xuyên 2';
+      if (/thường xuyên\s*3|\btx\s*3\b/.test(s)) return 'Đánh giá thường xuyên 3';
+      if (/thường xuyên\s*4|\btx\s*4\b/.test(s)) return 'Đánh giá thường xuyên 4';
+      if (/giữa kỳ|giữa kì|\bgk\b/.test(s)) return 'Giữa kỳ';
+      if (/cuối kỳ|cuối kì|\bck\b/.test(s)) return 'Cuối kỳ';
+      return String(loai || '').trim();
+    }
+    const NHAN_CHUAN = ['Đánh giá thường xuyên 1','Đánh giá thường xuyên 2','Đánh giá thường xuyên 3','Đánh giá thường xuyên 4','Giữa kỳ','Cuối kỳ'];
+    const timTheoNhan = (nhan) => items.find(it => chuanHoaNhanDiem(it.loaiDiem) === nhan);
+    const rows = NHAN_CHUAN.map(nhan => {
+      const it = timTheoNhan(nhan);
+      if (!it || String(it.diemSo ?? '').trim() === ''){
+        return `<div class="score-row">
+          <span class="score-kind">${esc(nhan)}</span>
+          <span class="score-val n"></span>
+        </div>`;
+      }
       const c = giaTriHienThi(name, it.diemSo);
-      if (!c) return '';
+      if (!c){
+        return `<div class="score-row">
+          <span class="score-kind">${esc(nhan)}</span>
+          <span class="score-val n"></span>
+        </div>`;
+      }
       const isTB = kindOf(it.loaiDiem) === 'TB';
       return `<div class="score-row ${isTB?'official':''}">
-        <span class="score-kind">${isTB?'⭐ ':''}${esc(it.loaiDiem)}</span>
+        <span class="score-kind">${isTB?'⭐ ':''}${esc(nhan)}</span>
         <span class="score-val ${c.cls} ${isTB?'official':''}">${esc(c.label)}</span>
       </div>`;
     }).join('');

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================================
  *  BACKEND TRA Cá»¨U ÄIá»‚M v2.0 â€” TRÆ¯á»œNG THCS NGUYá»„N THÃI BÃŒNH
  * ============================================================================
@@ -1048,12 +1048,13 @@ function metaNamHoc(ss) {
 function damBaoCotNamHoc(ss) {
   const sh = ss.getSheetByName(TAB.DIEM_TONG);
   if (!sh) return;
-  if (sh.getLastColumn() < 11) {
-    sh.getRange(1, 11).setValue('NamHoc');
-  } else {
-    const h = String(sh.getRange(1, 11).getValue() || '').trim();
-    if (h !== 'NamHoc') sh.getRange(1, 11).setValue('NamHoc');
+  let lc = sh.getLastColumn();
+  if (lc < 11) {
+    sh.insertColumnsAfter(Math.max(lc, 1), 11 - lc);
+    lc = 11;
   }
+  const h = String(sh.getRange(1, 11).getValue() || '').trim();
+  if (h !== 'NamHoc') sh.getRange(1, 11).setValue('NamHoc');
   const lr = sh.getLastRow();
   if (lr >= 2) {
     const rng = sh.getRange(2, 11, lr - 1, 1);
@@ -1070,12 +1071,17 @@ function damBaoCotNamHoc(ss) {
 function damBaoCotGvcn(ss) {
   const sh = ss.getSheetByName(TAB.GVCN);
   if (!sh) return;
-  if (sh.getLastColumn() < 3) sh.getRange(1, 3).setValue('Email');
-  if (sh.getLastColumn() < 4) sh.getRange(1, 4).setValue('DienThoai');
-  const h3 = String(sh.getRange(1, 3).getValue() || '').trim();
-  const h4 = String(sh.getRange(1, 4).getValue() || '').trim();
-  if (h3 !== 'Email') sh.getRange(1, 3).setValue('Email');
-  if (h4 !== 'DienThoai') sh.getRange(1, 4).setValue('DienThoai');
+  let lc = sh.getLastColumn();
+  if (lc < 4) {
+    sh.insertColumnsAfter(Math.max(lc, 1), 4 - lc);
+    lc = 4;
+  }
+  const headers = ['Lop', 'GVCN', 'Email', 'DienThoai'];
+  for (let i = 0; i < 4; i++) {
+    const h = String(sh.getRange(1, i + 1).getValue() || '').trim();
+    if (h !== headers[i]) sh.getRange(1, i + 1).setValue(headers[i]);
+  }
+  sh.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#dbeafe');
 }
 
 function docGvcnChiTiet(ss) {
