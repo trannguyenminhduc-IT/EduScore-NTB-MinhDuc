@@ -137,6 +137,11 @@ table.preview td{padding:6px 9px;white-space:nowrap;max-width:160px;overflow:hid
 .che-do{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
 .che-do label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--slate-700);cursor:pointer}
 
+/* ---------- MODAL ---------- */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-overlay.show{display:flex}
+.modal-card{background:#fff;border-radius:18px;box-shadow:0 20px 50px -12px rgba(15,23,42,.35);max-width:420px;width:100%;padding:26px 22px}
+
 /* ---------- TIỆN ÍCH ---------- */
 .hidden{display:none!important}
 .spinner{width:16px;height:16px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .8s linear infinite;flex:none}
@@ -200,17 +205,6 @@ footer{text-align:center;padding:18px;font-size:11.5px;color:var(--slate-400)}
       <div class="stat"><div class="n" id="stHS">0</div><div class="l">Học sinh</div></div>
     </div>
 
-    <!-- Đồng bộ -->
-    <div class="card">
-      <h2>🔄 Đồng bộ dữ liệu</h2>
-      <div class="sub">Dùng khi giáo viên nhập điểm trực tiếp vào tab riêng trên Sheet (hệ thống cũng tự gộp mỗi 5 phút). Điểm nạp từ file ZIP SMIS thì <b>không cần bấm nút này</b> — đã được ghi vào kho ngay khi bấm “Nạp vào hệ thống”.</div>
-      <div class="sync-row">
-        <div class="sync-info" id="syncInfo">Chưa tải thông tin…</div>
-        <button class="btn btn-primary" id="btnSync" onclick="dongBoNgay()">
-          <span id="btnSyncLabel">Đồng bộ ngay</span>
-        </button>
-      </div>
-    </div>
 
     <!-- GVCN theo lớp -->
     <div class="card">
@@ -223,8 +217,14 @@ footer{text-align:center;padding:18px;font-size:11.5px;color:var(--slate-400)}
         <input type="file" id="gvcnFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="docFileGvcn(this.files[0])">
       </div>
       <textarea id="gvcnText" rows="7" placeholder="8A1 - Nguyễn Văn A&#10;8A2 - Trần Thị B&#10;8A3 - Lê Văn C&#10;...&#10;(phân cách giữa lớp và tên bằng dấu -, dấu phẩy, chấm phẩy hoặc hai chấm)" style="width:100%;padding:10px 12px;border:1.5px solid var(--slate-200);border-radius:9px;font-family:inherit;font-size:13.5px"></textarea>
+      <div class="file-zone" style="padding:12px 14px;margin:10px 0" onclick="document.getElementById('gvcnEmailFile').click()">
+        <div class="t" style="font-size:13px">Nhập email GVCN từ file Excel cả trường</div>
+        <div class="s">Nhận .xlsx/.csv — tự lọc theo danh sách GVCN theo lớp, chỉ thêm gmail, bỏ các dòng khác</div>
+        <input type="file" id="gvcnEmailFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="nhapEmailGvcnTuFile(this.files[0])">
+      </div>
       <div class="form-actions">
         <button class="btn btn-primary" id="btnGvcn" onclick="luuGvcn()">Lưu danh sách GVCN</button>
+        <button class="btn btn-ghost" onclick="xacMinhGvcn()">Xác minh với danh mục</button>
         <span class="help" id="gvcnHelp"></span>
       </div>
     </div>
@@ -238,45 +238,6 @@ footer{text-align:center;padding:18px;font-size:11.5px;color:var(--slate-400)}
       </div>
     </div>
 
-    <!-- Danh mục -->
-    <div class="card">
-      <h2>🗂️ Danh mục khối → lớp → môn</h2>
-      <div class="sub">Mỗi dòng là một tab điểm của giáo viên trong Sheet trung tâm. Thêm dòng sẽ tự tạo tab và khóa tab đó cho giáo viên (theo email).</div>
-      <div class="form-actions" style="margin:0 0 12px">
-        <button class="btn btn-ghost" onclick="moFormDanhMuc()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Thêm lớp – môn
-        </button>
-      </div>
-
-      <div id="formDanhMuc" class="hidden" style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px">
-        <div class="form-grid">
-          <div class="field"><label>Khối *</label>
-            <select id="fKhoi"><option value="6">Khối 6</option><option value="7">Khối 7</option><option value="8" selected>Khối 8</option><option value="9">Khối 9</option></select>
-          </div>
-          <div class="field"><label>Lớp *</label><input id="fLop" placeholder="VD: 8A1"></div>
-          <div class="field"><label>Môn *</label><input id="fMon" list="dsMon" placeholder="VD: Toán">
-            <datalist id="dsMon"><option>Toán</option><option>Ngữ văn</option><option>Ngoại ngữ</option><option>Lịch sử và Địa lí</option><option>Khoa học tự nhiên</option><option>Tin học</option><option>Công nghệ</option><option>Giáo dục công dân</option><option>Giáo dục thể chất</option><option>Nghệ thuật</option><option>Hoạt động trải nghiệm</option><option>Giáo dục địa phương</option></datalist>
-          </div>
-          <div class="field"><label>Giáo viên</label><input id="fGV" placeholder="Họ và tên GV"></div>
-          <div class="field"><label>Email GV (chỉnh sửa được tab)</label><input id="fEmail" placeholder="gv@school.edu.vn, nhiều email cách nhau dấu ,"></div>
-          <div class="field"><label>Học kỳ</label><select id="fHK"><option value="HK1">HK1</option><option value="HK2">HK2</option></select></div>
-          <div class="field"><label>Ghi chú</label><input id="fGhiChu" placeholder="Tùy chọn"></div>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary" id="btnSaveDm" onclick="luuDanhMuc()">Lưu</button>
-          <button class="btn btn-ghost" onclick="dongFormDanhMuc()">Hủy</button>
-          <span class="help" id="formHint"></span>
-        </div>
-      </div>
-
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>Khối</th><th>Lớp</th><th>Môn</th><th>Giáo viên</th><th>Tab trên Sheet</th><th>HK</th><th>Số HS</th><th>Cập nhật cuối</th><th></th></tr></thead>
-          <tbody id="dmBody"></tbody>
-        </table>
-      </div>
-    </div>
 
     <!-- Nạp dữ liệu từ file (SMIS → file → đây) -->
     <div class="card">
@@ -354,6 +315,30 @@ footer{text-align:center;padding:18px;font-size:11.5px;color:var(--slate-400)}
         <div class="field"><label>Nhập lại mật khẩu mới</label><input type="password" id="mkMoi2"></div>
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="doiMatKhau()">Đổi mật khẩu</button></div>
+    </div>
+
+    <!-- Xuất dữ liệu (phía client) -->
+    <div class="card">
+      <h2>💾 Xuất dữ liệu</h2>
+      <div class="sub">Xuất danh mục hiện có ra file CSV (không cần máy chủ mới).</div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="xuatDanhMucCsv()">Xuất danh mục (CSV)</button>
+      </div>
+    </div>
+
+    <!-- Modal thông báo GVCN -->
+    <div class="modal-overlay" id="notifyModal">
+      <div class="modal-card" style="max-width:560px;text-align:left">
+        <h3>📣 Thông báo cho giáo viên chủ nhiệm</h3>
+        <p style="font-size:13px;color:var(--slate-500);margin-bottom:10px">Sao chép nội dung hoặc mở chương trình email để gửi cho GVCN.</p>
+        <textarea id="notifyText" rows="8" style="width:100%;padding:10px 12px;border:1.5px solid var(--slate-200);border-radius:9px;font-family:inherit;font-size:13px"></textarea>
+        <div class="form-actions" style="margin-top:12px">
+          <button class="btn btn-ghost" onclick="saoChepThongBao()">Sao chép</button>
+          <button class="btn btn-primary" onclick="moEmailThongBao()">Mở email</button>
+          <button class="btn btn-ghost" onclick="dongNotifyModal()">Đóng</button>
+        </div>
+        <p id="notifyHelp" style="font-size:12px;color:var(--slate-500);margin-top:8px"></p>
+      </div>
     </div>
 
     <footer>Hệ thống tra cứu điểm — Trường THCS Nguyễn Thái Bình • Dữ liệu lưu trên Google Sheet trung tâm, sắp xếp theo khối → lớp → môn</footer>
@@ -453,21 +438,29 @@ async function taiDuLieu(){
     if (!xuLyKetQua(d)) return;
     DANH_MUC_HIENTAI = d.danhMuc || [];
     $('topTenTruong').textContent = d.meta.TEN_TRUONG;
-    $('stKhoi').textContent = d.thongKe.soKhoi;
-    $('stLop').textContent = d.thongKe.soLop;
-    $('stMon').textContent = d.thongKe.soMon;
     $('stHS').textContent = d.thongKe.soHocSinh;
     $('btnOpenSheet').href = d.sheetUrl || '#';
-    $('syncInfo').textContent = (d.meta.CAP_NHAT ? 'Đồng bộ lần cuối: ' + d.meta.CAP_NHAT : 'Chưa có lần đồng bộ nào') +
-      ' — ' + DANH_MUC_HIENTAI.length + ' tab giáo viên đang theo dõi.';
     // cấu hình
     $('cTenTruong').value = d.meta.TEN_TRUONG || '';
     $('cPhuDe').value = d.meta.PHU_DE || '';
     $('cHocKy').value = d.meta.HOC_KY || '';
     $('cHocKyLoc').value = d.meta.HOC_KY_LOC || 'HK1';
     $('cGhiChu').value = d.meta.GHI_CHU || '';
-    if (d.gvcnText !== undefined) $('gvcnText').value = d.gvcnText || '';
-    veBangDanhMuc();
+    if (d.gvcnText !== undefined){
+      const emailMap = JSON.parse(localStorage.getItem('ntb_gvcn_email') || '{}');
+      const lines = String(d.gvcnText || '').split(/\\r?\\n/).map(line => {
+        if (!line.trim()) return '';
+        const parts = line.split(/[-,;:]/);
+        const lop = String(parts[0] || '').trim();
+        const gv = String(parts.slice(1).join('-') || '').trim();
+        const email = emailMap[lop];
+        return email ? `${lop} | ${gv} | ${email}` : (gv ? `${lop} - ${gv}` : line.trim());
+      });
+      const merged = lines.join('\\n');
+      $('gvcnText').value = merged;
+      $('gvcnText').dataset.original = merged;
+    }
+    taiNhatKy();
   } catch (e){
     toast('err', 'Không tải được dữ liệu. Kiểm tra kết nối và thử lại (F5).');
   }
@@ -475,6 +468,7 @@ async function taiDuLieu(){
 
 function veBangDanhMuc(){
   const body = $('dmBody');
+  if (!body) return;
   if (!DANH_MUC_HIENTAI.length){
     body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--slate-400);padding:22px">Chưa có tab giáo viên nào — bấm “Thêm lớp – môn” để tạo dòng đầu tiên.</td></tr>`;
     return;
@@ -603,15 +597,17 @@ async function docFileGvcn(file){
     }
 
     // Tìm dòng tiêu đề chứa cả cột "Lớp" và cột GVCN (trong 15 dòng đầu)
-    let h = -1, colLop = -1, colGv = -1;
+    let h = -1, colLop = -1, colGv = -1, colEmail = -1, colPhone = -1;
     for (let i = 0; i < Math.min(rows.length, 15); i++){
-      let l = -1, g = -1;
+      let l = -1, g = -1, e = -1, p = -1;
       rows[i].forEach(function (cRaw, cIdx){
         const s = boDauGvcn(cRaw).toLowerCase().replace(/\s+/g, ' ').trim();
         if (l === -1 && (/^lop$/.test(s) || /^ten lop$/.test(s) || /^lop hoc$/.test(s))) l = cIdx;
         if (g === -1 && (s.includes('chu nhiem') || s.startsWith('gvcn')) && !s.includes('kiem')) g = cIdx;
+        if (e === -1 && (s.includes('email') || s.includes('e-mail') || s.includes('thu dien tu'))) e = cIdx;
+        if (p === -1 && (s.includes('dien thoai') || s.includes('so dt') || s.includes('phone') || s.includes('sdt'))) p = cIdx;
       });
-      if (l !== -1 && g !== -1){ h = i; colLop = l; colGv = g; break; }
+      if (l !== -1 && g !== -1){ h = i; colLop = l; colGv = g; colEmail = e; colPhone = p; break; }
     }
     if (h === -1){
       toast('err', 'Không tìm thấy cột “Lớp” và “Giáo viên chủ nhiệm” — hãy dán thủ công theo mẫu.');
@@ -622,7 +618,11 @@ async function docFileGvcn(file){
     for (let i = h + 1; i < rows.length; i++){
       const lop = String(rows[i][colLop] || '').replace(/^lớp\s*/i, '').trim();
       const gv = String(rows[i][colGv] || '').replace(/\s+/g, ' ').trim();
-      if (lop && gv && /\d/.test(lop) && !/^tổng/.test(boDauGvcn(lop).toLowerCase())) dong.push(lop + ' - ' + gv);
+      const email = colEmail >= 0 ? String(rows[i][colEmail] || '').trim() : '';
+      const phone = colPhone >= 0 ? String(rows[i][colPhone] || '').trim() : '';
+      if (lop && gv && /\d/.test(lop) && !/^tổng/.test(boDauGvcn(lop).toLowerCase())){
+        dong.push([lop, gv, email, phone].filter(x => x !== '').join(' | '));
+      }
     }
     if (!dong.length){
       toast('err', 'File không có dòng lớp – GVCN nào hợp lệ.');
@@ -638,12 +638,21 @@ async function docFileGvcn(file){
   }
 }
 
+function lamSachGvcnText(text){
+  return String(text || '').split(/\\r?\\n/).map(line => {
+    if (!line.trim()) return '';
+    const parts = line.indexOf('|') >= 0 ? line.split('|') : line.split(/[-,;:]/);
+    const lop = String(parts[0] || '').trim();
+    const gv = String(parts[1] || '').trim();
+    return lop && gv ? (lop + ' - ' + gv) : line.trim();
+  }).filter(Boolean).join('\\n');
+}
 async function luuGvcn(){
   const text = $('gvcnText').value.trim();
   if (!text){ toast('err','Chưa có danh sách nào để lưu.'); return; }
   $('btnGvcn').disabled = true;
   try {
-    const res = await apiPost('gvcnSave', { text });
+    const res = await apiPost('gvcnSave', { text: text });
     if (xuLyKetQua(res)) toast('ok', res.msg || 'Đã lưu danh sách GVCN.');
   } catch(e){ toast('err','Không kết nối được máy chủ.'); }
   finally { $('btnGvcn').disabled = false; }
@@ -1039,6 +1048,7 @@ async function napDuLieuVaoHeThong(){
     const rowsAll = [];
     smisTables.forEach(t => smisThanhRows(t).forEach(r => rowsAll.push(r)));
     if (!rowsAll.length){ toast('err', 'Không đọc được điểm nào từ các bảng SMIS.'); return; }
+    const nhomCapNhat = new Set(rowsAll.map(r => `${r.lop}|${r.mon}`));
     const payload = {
       khoi: suyKhoiTuLop(rowsAll[0].lop, khoiNh), lop: '', mon: '',
       giaoVien: '', hocKy: hk, cheDo, rows: rowsAll,
@@ -1104,6 +1114,7 @@ async function napDuLieuVaoHeThong(){
   }
 
   if (!payload.rows.length){ toast('err', 'Không có dòng hợp lệ nào (thiếu Mã định danh).'); return; }
+  const nhomCapNhat = new Set((payload.rows || []).map(r => `${r.lop || payload.lop || ''}|${r.mon || payload.mon || ''}`));
 
   $('btnNap').disabled = true;
   try {
@@ -1111,6 +1122,7 @@ async function napDuLieuVaoHeThong(){
     if (xuLyKetQua(res)){
       toast('ok', res.msg || 'Đã nạp dữ liệu.');
       taiDuLieu();
+      hienThongBaoSauNap(nhomCapNhat);
       setTimeout(huyNap, 800);
     }
   } catch(e){ toast('err', 'Không kết nối được máy chủ.'); }
@@ -1131,6 +1143,183 @@ function huyNap(){
   ['dragleave', 'drop'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.style.borderColor = ''; z.style.background = ''; }));
   z.addEventListener('drop', e => { if (e.dataTransfer.files && e.dataTransfer.files[0]) docFileNay(e.dataTransfer.files[0]); });
 })();
+
+/* ================= XUAT DU LIEU (CLIENT) + XAC MINH GVCN (CLIENT) ================= */
+function xuatDanhMucCsv(){
+  if (!DANH_MUC_HIENTAI || !DANH_MUC_HIENTAI.length){ toast('err','Chưa có danh mục để xuất.'); return; }
+  const header = ['STT','Khoi','Lop','Mon','GiaoVien','Email','TabName','HocKy','SoHS','CapNhatCuoi','GhiChu'];
+  const rows = [header].concat(DANH_MUC_HIENTAI.map(r => header.map(k => String(r[k] || ''))));
+  const csv = rows.map(row => row.map(c => /[",\n]/.test(c) ? '"' + c.replace(/"/g,'""') + '"' : c).join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'danh-muc.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('ok','Đã xuất danh mục.');
+}
+function phanTichGvcnText(text){
+  const map = {};
+  String(text || '').split(/\r?\n/).forEach(line => {
+    if (!line.trim()) return;
+    const parts = line.indexOf('|') >= 0 ? line.split('|') : line.split(/[-,;:]/);
+    const lop = String(parts[0] || '').trim();
+    const gv = String(parts[1] || '').trim();
+    if (lop && gv) map[lop] = gv;
+  });
+  return map;
+}
+async function xacMinhGvcn(){
+  const text = $('gvcnText').value.trim();
+  if (!text){ toast('err','Chưa có danh sách để xác minh.'); return; }
+  const nhap = phanTichGvcnText(text);
+  const hienTai = phanTichGvcnText($('gvcnText').dataset.original || '');
+  const khac = [], thieu = [], duThua = [];
+  Object.keys(hienTai).forEach(lop => {
+    if (!nhap[lop]) thieu.push(lop);
+    else if (phanTichGvcnText(lop) !== phanTichGvcnText(lop) ) {}
+    else if (nhap[lop].trim().toLowerCase() !== hienTai[lop].trim().toLowerCase()) khac.push(lop);
+  });
+  Object.keys(nhap).forEach(lop => { if (!hienTai[lop]) duThua.push(lop); });
+  const msg = `Nhập ${Object.keys(nhap).length} lớp, hiện có ${Object.keys(hienTai).length} lớp. Khớp: ${Object.keys(hienTai).length - khac.length - thieu.length}. Khác: ${khac.length}. Thiếu: ${thieu.length}. Thừa: ${duThua.length}.`;
+  $('gvcnHelp').textContent = msg;
+  toast('info', msg);
+}
+
+/* ================= NHAP EMAIL GVCN TU FILE TOAN TRUONG ================= */
+async function nhapEmailGvcnTuFile(file){
+  if (!file) return;
+  try {
+    let rows;
+    if (/\.(xlsx|xls)$/i.test(file.name)){
+      if (typeof XLSX === 'undefined' || window.__khongXlsx){
+        toast('err', 'Không tải được thư viện đọc Excel — hãy lưu CSV UTF-8.');
+        return;
+      }
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', raw: false });
+      rows = sheetThanhRows(wb.Sheets[wb.SheetNames[0]]);
+    } else {
+      rows = parseCsv(await file.text()).map(r => r.map(c => String(c ?? '').trim()));
+    }
+    // tìm dòng header
+    let h = -1, colLop = -1, colTen = -1, colEmail = -1, colPhone = -1;
+    for (let i = 0; i < Math.min(rows.length, 15); i++){
+      let l=-1,t=-1,e=-1,p=-1;
+      rows[i].forEach((cRaw, idx) => {
+        const s = boDauGvcn(cRaw).toLowerCase().replace(/\s+/g,' ').trim();
+        if (l === -1 && (/^lop$/.test(s) || /^ten lop$/.test(s) || /^lop hoc$/.test(s))) l = idx;
+        if (t === -1 && (s.includes('ho ten') || s.includes('ten gv') || s.includes('giao vien') || s.includes('chu nhiem') || s === 'ten')) t = idx;
+        if (e === -1 && (s.includes('email') || s.includes('e-mail') || s.includes('thu dien tu') || s.includes('gmail'))) e = idx;
+        if (p === -1 && (s.includes('dien thoai') || s.includes('so dt') || s.includes('phone') || s.includes('sdt') || s.includes('di dong'))) p = idx;
+      });
+      if (e !== -1 && (l !== -1 || t !== -1)){ h=i; colLop=l; colTen=t; colEmail=e; colPhone=p; break; }
+    }
+    if (h === -1 || colEmail === -1){
+      toast('err', 'Không tìm thấy cột Email trong file.');
+      return;
+    }
+    const mapLop = {}, mapTen = {};
+    for (let i = h+1; i < rows.length; i++){
+      const email = String(rows[i][colEmail] || '').trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) continue;
+      if (colLop >= 0){
+        const lop = String(rows[i][colLop] || '').replace(/^lớp\s*/i,'').trim();
+        if (lop) mapLop[lop] = email;
+      }
+      if (colTen >= 0){
+        const ten = chuanHoaTenGvcn(rows[i][colTen]);
+        if (ten) mapTen[ten] = email;
+      }
+    }
+    // lưu email vào localStorage để không mất khi tải lại
+    const emailMap = JSON.parse(localStorage.getItem('ntb_gvcn_email') || '{}');
+    $('gvcnText').value.split(/\r?\n/).forEach(line => {
+      if (!line.trim()) return;
+      const parts = line.indexOf('|') >= 0 ? line.split('|') : line.split(/[-,;:]/);
+      const lop = String(parts[0] || '').trim();
+      const ten = String(parts[1] || '').trim();
+      if (mapLop[lop]) emailMap[lop] = mapLop[lop];
+      else {
+        const tenKey = chuanHoaTenGvcn(ten);
+        if (mapTen[tenKey]) emailMap[lop] = mapTen[tenKey];
+      }
+    });
+    localStorage.setItem('ntb_gvcn_email', JSON.stringify(emailMap));
+
+    // cập nhật danh sách GVCN hiện có
+    const lines = $('gvcnText').value.split(/\r?\n/).filter(l => l.trim());
+    let soThem = 0;
+    const moi = lines.map(line => {
+      const parts = line.indexOf('|') >= 0 ? line.split('|') : line.split(/[-,;:]/);
+      const lop = String(parts[0] || '').trim();
+      const ten = String(parts[1] || '').trim();
+      let email = parts[2] ? String(parts[2]).trim() : '';
+      if (!email){
+        if (mapLop[lop]) { email = mapLop[lop]; soThem++; }
+        else {
+          const tenKey = chuanHoaTenGvcn(ten);
+          if (mapTen[tenKey]) { email = mapTen[tenKey]; soThem++; }
+        }
+      }
+      return email ? `${lop} | ${ten} | ${email}` : `${lop} - ${ten}`;
+    });
+    $('gvcnText').value = moi.join('\n');
+    $('gvcnHelp').textContent = `Đã thêm email cho ${soThem} GVCN từ file toàn trường.`;
+    toast('ok', `Đã thêm email cho ${soThem} GVCN.`);
+  } catch(e){
+    console.error(e);
+    toast('err', 'Không đọc được file: ' + e.message);
+  }
+}
+function chuanHoaTenGvcn(s){
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().replace(/\s+/g,' ').trim();
+}
+
+/* ================= THONG BAO GVCN (CLIENT) ================= */
+let notifyEmails = [];
+function moNotifyModal(text, emails){
+  notifyEmails = emails || [];
+  $('notifyText').value = text;
+  $('notifyHelp').textContent = notifyEmails.length ? ('Email GVCN: ' + notifyEmails.join(', ')) : 'Chưa có email GVCN. Hãy nhập email bằng file Excel toàn trường.';
+  $('notifyModal').classList.add('show');
+}
+function dongNotifyModal(){ $('notifyModal').classList.remove('show'); }
+async function saoChepThongBao(){
+  try { await navigator.clipboard.writeText($('notifyText').value); toast('ok','Đã sao chép nội dung.'); }
+  catch(e){ toast('err','Không sao chép được.'); }
+}
+function moEmailThongBao(){
+  const subject = encodeURIComponent('Cập nhật điểm học sinh');
+  const body = encodeURIComponent($('notifyText').value);
+  const bcc = encodeURIComponent(notifyEmails.join(','));
+  const url = 'mailto:?bcc=' + bcc + '&subject=' + subject + '&body=' + body;
+  window.location.href = url;
+}
+function taoThongBaoText(nhom){
+  const tenTruong = ($('cTenTruong') && $('cTenTruong').value) || 'Trường';
+  const dong = Array.from(nhom).sort().map(k => {
+    const p = k.split('|'); return `- ${p[0]}: ${p[1]}`;
+  }).join('\\n');
+  return `${tenTruong} — Thông báo cập nhật điểm\\n\\nHệ thống tra cứu điểm vừa được cập nhật cho:\\n${dong}\\n\\nVui lòng kiểm tra và thông báo cho học sinh.`;
+}
+function layEmailTheoLop(){
+  const map = {};
+  String($('gvcnText').value || '').split(/\\r?\\n/).forEach(line => {
+    if (!line.trim()) return;
+    const parts = line.indexOf('|') >= 0 ? line.split('|') : line.split(/[-,;:]/);
+    const lop = String(parts[0] || '').trim();
+    const email = parts.length >= 3 ? String(parts[2] || '').trim() : '';
+    if (lop && email && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) map[lop] = email;
+  });
+  return map;
+}
+function hienThongBaoSauNap(nhom){
+  const emailMap = layEmailTheoLop();
+  const emails = Array.from(new Set(Array.from(nhom).map(k => emailMap[k.split('|')[0]]).filter(Boolean)));
+  const text = taoThongBaoText(nhom);
+  moNotifyModal(text, emails);
+}
 
 /* ================= CHẾ ĐỘ DEMO (khi chưa có SCRIPT_URL) ================= */
 let demoData = null;
@@ -1188,8 +1377,15 @@ async function demoApi(action, getParams, postData){
     const d = parse(postData.data);
     let so = 0; (d.rows || []).forEach(it => so += (it.diem || []).length);
     demoData.meta.CAP_NHAT = new Date().toLocaleString('vi-VN');
+    demoData.meta.NAM_HOC = d.namHoc || demoData.meta.NAM_HOC;
     return { ok:true, msg:'(Demo) Đã nạp ' + so + ' điểm vào hệ thống.', soHang: so };
   }
+  if (action === 'backupDrive') return { ok:true, url:'#', name:'(Demo) backup' };
+  if (action === 'restoreBackup') return { ok:true, msg:'(Demo) Đã khôi phục.' };
+  if (action === 'backupJson') return { ok:true, data: { DIEM_TONG:[], HOSO:[] }, time: new Date().toLocaleString('vi-VN') };
+  if (action === 'exportCsv') return { ok:true, filename: ((getParams && getParams.tab) || 'data') + '.csv', csv: 'col1,col2\\n1,2' };
+  if (action === 'auditLog') return { ok:true, rows: [ { thoiGian:'01/01/2026 00:00:00', hanhDong:'Demo', chiTiet:'Dữ liệu mẫu', soDong:0 } ] };
+  if (action === 'gvcnVerify') return { ok:true, tongNhap:3, tongHienTai:3, khop:3, khac:[], thieu:[], duThua:[] };
   return { error:'Không hỗ trợ trong demo' };
 }
 
@@ -1202,6 +1398,8 @@ async function demoApi(action, getParams, postData){
   $('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') dangNhap(); });
   const tok = sessionStorage.getItem('ntb_admin_token');
   if (tok){ TOKEN = tok; vaoBangDieuKhien(false); }
+  const rf = document.getElementById('restoreFile');
+  if (rf) rf.addEventListener('change', function(){ if (this.files && this.files[0]) khoiPhucTuFile(this.files[0]); this.value=''; });
 })();
 </script>
 </body>

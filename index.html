@@ -251,6 +251,17 @@ footer .school{font-size:13.5px;font-weight:700;color:var(--blue-900);text-trans
 footer .line{font-size:12px;color:var(--slate-500);margin-top:5px}
 footer .disclaimer{font-size:11.5px;color:var(--slate-400);margin-top:10px;font-style:italic}
 
+/* ============ XÁC MINH NGÀY SINH ============ */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-overlay.show{display:flex}
+.modal-card{background:#fff;border-radius:18px;box-shadow:0 20px 50px -12px rgba(15,23,42,.35);max-width:420px;width:100%;padding:26px 22px;text-align:center}
+.modal-card h3{font-size:17px;color:var(--blue-900);margin-bottom:6px}
+.modal-card p{font-size:13px;color:var(--slate-500);margin-bottom:14px}
+.modal-card input{width:100%;padding:12px 14px;border:2px solid var(--slate-200);border-radius:11px;font-size:15px;font-family:inherit;text-align:center;letter-spacing:1px}
+.modal-card input:focus{outline:none;border-color:var(--blue-500);box-shadow:0 0 0 4px rgba(59,130,246,.15)}
+.modal-actions{display:flex;gap:10px;margin-top:14px}
+.modal-actions .btn{flex:1}
+
 /* ============ IN ẤN ============ */
 @media print{
   body{background:#fff}
@@ -335,6 +346,7 @@ footer .disclaimer{font-size:11.5px;color:var(--slate-400);margin-top:10px;font-
 
     <div class="section-title">📖 Kết quả các môn học</div>
     <div class="subject-grid" id="subjectGrid"></div>
+    <div class="status-card status-warn" id="redWarn" style="display:none;margin-top:14px"></div>
 
     <div class="actions">
       <button class="btn btn-outline" onclick="window.print()">
@@ -346,6 +358,20 @@ footer .disclaimer{font-size:11.5px;color:var(--slate-400);margin-top:10px;font-
         Tra cứu học sinh khác
       </button>
     </div>
+  </div>
+</div>
+
+<!-- Modal xác minh ngày sinh -->
+<div class="modal-overlay" id="verifyModal">
+  <div class="modal-card">
+    <h3>🔐 Xác minh học sinh</h3>
+    <p>Vui lòng nhập <b>ngày sinh</b> của học sinh (dd/mm/yyyy) để xem kết quả.</p>
+    <input type="text" id="verifyDob" placeholder="VD: 05/03/2012" inputmode="numeric" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="dongModalXacMinh()">Hủy</button>
+      <button class="btn btn-primary" onclick="xacMinhVaTraCuu()">Xác nhận</button>
+    </div>
+    <p id="verifyErr" style="color:var(--red-600);font-size:12.5px;font-weight:600;margin-top:10px;display:none"></p>
   </div>
 </div>
 
@@ -527,6 +553,7 @@ function renderResult(payload){
   // 2) Lưới môn học — GỘP TRÙNG TÊN MÔN (dữ liệu cũ/SMIS ghi khác nhau) rồi sắp theo thứ tự chương trình
   const grid = $('subjectGrid'); grid.innerHTML = '';
   let nSubjects = 0;
+  let coMonDo = false;
 
   const gopMon = {};
   Object.keys(subjects).forEach(rawName => {
@@ -550,8 +577,9 @@ function renderResult(payload){
     if (!laMonDC){
       const est = estimateSubjectAvg(items);
       if (est){
-        const c = classifyScore(est.value.toFixed(1));
-        const title = est.official
+         const c = classifyScore(est.value.toFixed(1));
+         if (c && c.cls === 'r') coMonDo = true;
+         const title = est.official
           ? 'Điểm TB môn chính thức theo sổ điểm SMIS'
           : (est.duCot
               ? 'Tính theo TT 22/2021: (ΣTX + 2×GK + 3×CK) ÷ (số TX + 5)'
@@ -585,6 +613,16 @@ function renderResult(payload){
     grid.innerHTML = `<div class="subject-card"><div class="score-list" style="padding:16px;color:var(--slate-500);text-align:center">Chưa có điểm nào được ghi nhận trong kỳ này.</div></div>`;
   }
 
+  const warn = $('redWarn');
+  if (coMonDo){
+    warn.className = 'status-card show status-warn';
+    warn.style.display = 'flex';
+    warn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>Có môn TBM màu đỏ: nếu TBM dưới 3.5, học sinh sẽ phải thi lại.</div>';
+  } else {
+    warn.className = 'status-card';
+    warn.style.display = 'none';
+    warn.innerHTML = '';
+  }
   $('statSubjects').textContent = nSubjects;
   $('statTerm').textContent = /2/.test(payload.hocKy||CONFIG.HOC_KY_LABEL) && /học kỳ 2|học kì 2/i.test(payload.hocKy||CONFIG.HOC_KY_LABEL) ? 'HK2' : 'HK1';
 
@@ -595,6 +633,8 @@ function renderResult(payload){
 
 /* ---------------- Luồng tra cứu ---------------- */
 let lastQuery = '';
+let pendingPayload = null;
+
 function performSearch(){
   const input = $('searchInput');
   const query = input.value.replace(/\s+/g,'');
@@ -607,19 +647,44 @@ function performSearch(){
   $('searchBtn').disabled = true;
   showStatus('loading','Đang lấy bảng điểm từ hệ thống, vui lòng đợi vài giây…');
 
-  const finish = () => { $('searchBtn').disabled = false; };
-
   fetchData(query)
     .then(payload => {
-      finish();
+      $('searchBtn').disabled = false;
       if (payload.error){ showStatus('warn', esc(payload.error)); return; }
-      try{ renderResult(payload); }catch(e){ console.error(e); showStatus('error','Không hiển thị được dữ liệu. Vui lòng chụp màn hình báo lại cho trường.'); }
+      pendingPayload = payload;
+      moModalXacMinh();
+      hideStatus();
     })
     .catch(err => {
-      finish();
+      $('searchBtn').disabled = false;
       console.error(err);
       showStatus('error','Không kết nối được máy chủ. Kiểm tra kết nối mạng và thử lại sau ít phút.');
     });
+}
+
+function moModalXacMinh(){
+  $('verifyErr').style.display = 'none';
+  $('verifyDob').value = '';
+  $('verifyModal').classList.add('show');
+  setTimeout(() => $('verifyDob').focus(), 50);
+}
+function dongModalXacMinh(){
+  $('verifyModal').classList.remove('show');
+}
+function xacMinhVaTraCuu(){
+  const dob = $('verifyDob').value.trim();
+  if (!dob){ $('verifyErr').textContent = 'Vui lòng nhập ngày sinh.'; $('verifyErr').style.display = 'block'; return; }
+  if (!pendingPayload){ dongModalXacMinh(); return; }
+  const profile = (pendingPayload.data && pendingPayload.data.profile) || {};
+  const dobHs = String(profile['Ngày sinh'] || '').replace(/\D/g,'');
+  const dobNhap = dob.replace(/\D/g,'');
+  if (!dobHs || dobNhap !== dobHs){
+    $('verifyErr').textContent = 'Ngày sinh không khớp. Vui lòng kiểm tra lại.';
+    $('verifyErr').style.display = 'block';
+    return;
+  }
+  $('verifyModal').classList.remove('show');
+  try{ renderResult(pendingPayload); }catch(e){ console.error(e); showStatus('error','Không hiển thị được dữ liệu. Vui lòng chụp màn hình báo lại cho trường.'); }
 }
 
 function fetchData(id){
@@ -678,6 +743,16 @@ function DEMO_DATA(id){
   document.querySelector('footer .school').textContent = CONFIG.SCHOOL_NAME;
   if (!CONFIG.SCRIPT_URL) $('demoChip').style.display = 'block';
   $('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') performSearch(); });
+  const vd = $('verifyDob');
+  if (vd){
+    vd.addEventListener('keydown', e => { if (e.key === 'Enter') xacMinhVaTraCuu(); });
+    vd.addEventListener('input', () => {
+      let d = vd.value.replace(/\D/g,'').slice(0,8);
+      if (d.length > 4) d = d.slice(0,2) + '/' + d.slice(2,4) + '/' + d.slice(4);
+      else if (d.length > 2) d = d.slice(0,2) + '/' + d.slice(2);
+      vd.value = d;
+    });
+  }
   try { const last = localStorage.getItem('ntb_lastId'); if (last) $('searchInput').value = last; } catch(e){}
   const obs = new MutationObserver(() => {
     if ($('result').style.display === 'block')
