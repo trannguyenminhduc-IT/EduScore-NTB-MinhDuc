@@ -535,20 +535,26 @@ function renderResult(payload){
   const subjects = payload.data.subjects || {};
 
   // 1) Thẻ hồ sơ
-  const ten = profile['Họ và tên'] || profile['Họ tên'] || profile['Tên học sinh'] || 'Học sinh';
+  const ten = profile['HoTen'] || profile['Họ và tên'] || profile['Họ tên'] || profile['Tên học sinh'] || 'Học sinh';
   $('studentName').textContent = ten;
   const initials = ten.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
   $('avatar').textContent = initials || 'HS';
 
+  const lop = profile['Lop'] || profile['Lớp'];
+  const ngaySinh = profile['NgaySinh'] || profile['Ngày sinh'];
+  const ma = profile['MaDinhDanh'] || profile['Mã định danh'];
+  const gvcn = profile['GVCN'];
+  const sdtGvcn = profile['SDT_GVCN'];
+
   const badges = [];
-  if (profile['Lớp']) badges.push(['🎓', profile['Lớp'], 'blue']);
-  if (profile['Ngày sinh']) badges.push(['🎂', profile['Ngày sinh']]);
-  if (profile['Mã định danh']) badges.push(['🆔', profile['Mã định danh']]);
-  if (profile['GVCN']) badges.push(['👩‍🏫', 'GVCN: '+profile['GVCN']]);
+  if (lop) badges.push(['🎓', lop, 'blue']);
+  if (ngaySinh) badges.push(['🎂', ngaySinh]);
+  if (ma) badges.push(['🆔', ma]);
+  if (gvcn) badges.push(['👩‍🏫', 'GVCN: '+ gvcn + (sdtGvcn ? ' • SĐT: ' + sdtGvcn : '')]);
   $('badges').innerHTML = badges.map(([i,t,cls]) =>
     `<span class="badge ${cls||''}">${i} ${esc(t)}</span>`).join('');
 
-  $('updatedText').textContent = 'Dữ liệu: ' + (payload.capNhat || payload.hocKy || CONFIG.HOC_KY_LABEL);
+  $('updatedText').textContent = 'Dữ liệu sẽ được cập nhật ngày đầu tháng.';
 
   // 2) Lưới môn học — GỘP TRÙNG TÊN MÔN (dữ liệu cũ/SMIS ghi khác nhau) rồi sắp theo thứ tự chương trình
   const grid = $('subjectGrid'); grid.innerHTML = '';

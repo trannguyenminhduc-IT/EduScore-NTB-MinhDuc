@@ -184,19 +184,27 @@ function chuyenHosoProfile(ss, row) {
   if (!row) return null;
   const id = row['MaDinhDanh'];
   const p = {};
-  if (row['HoTen'])    p['Há» vÃ  tÃªn'] = row['HoTen'];
-  if (row['NgaySinh']) p['NgÃ y sinh'] = row['NgaySinh'];
-  if (row['Lop'])      p['Lá»›p'] = row['Lop'];
+  if (row['HoTen'])    p['HoTen'] = row['HoTen'];
+  if (row['NgaySinh']) p['NgaySinh'] = row['NgaySinh'];
+  if (row['Lop'])      p['Lop'] = row['Lop'];
   if (row['GVCN'])     p['GVCN'] = row['GVCN'];
-  // fallback GVCN theo lá»›p
-  if (!p['GVCN'] && p['Lá»›p']) {
-    // docGvcnChiTiet may exist; use simple map
+  if (p['Lop']) {
     try {
-      const gvcn = docGvcn(ss)[p['Lá»›p']];
+      const ct = docGvcnChiTiet(ss)[p['Lop']];
+      if (ct) {
+        if (!p['GVCN'] && ct.ten) p['GVCN'] = ct.ten;
+        if (ct.phone) p['SDT_GVCN'] = ct.phone;
+        if (ct.email) p['Email_GVCN'] = ct.email;
+      }
+    } catch (e) {}
+  }
+  if (!p['GVCN'] && p['Lop']) {
+    try {
+      const gvcn = docGvcn(ss)[p['Lop']];
       if (gvcn) p['GVCN'] = gvcn;
     } catch (e) {}
   }
-  p['MÃ£ Ä‘á»‹nh danh'] = row['MaDinhDanh'] || id;
+  p['MaDinhDanh'] = row['MaDinhDanh'] || id;
   return p;
 }
 
