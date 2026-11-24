@@ -652,7 +652,11 @@ async function luuGvcn(){
   if (!text){ toast('err','Chưa có danh sách nào để lưu.'); return; }
   $('btnGvcn').disabled = true;
   try {
-    const res = await apiPost('gvcnSave', { text: text });
+    let res = await apiPost('gvcnSave', { text: text });
+    if (res && (res.soLop === 0 || /0 lớp/.test(res.msg || ''))){
+      // backend cũ không hiểu email/SĐT → lưu tên GVCN để không mất dữ liệu
+      res = await apiPost('gvcnSave', { text: lamSachGvcnText(text) });
+    }
     if (xuLyKetQua(res)) toast('ok', res.msg || 'Đã lưu danh sách GVCN.');
   } catch(e){ toast('err','Không kết nối được máy chủ.'); }
   finally { $('btnGvcn').disabled = false; }
@@ -1218,7 +1222,7 @@ async function nhapEmailGvcnTuFile(file){
       toast('err', 'Không tìm thấy cột Email trong file.');
       return;
     }
-    const mapLop = {}, mapTen = {};
+    const mapLop = {}, mapTen = {}, mapPhone = {};
     for (let i = h+1; i < rows.length; i++){
       const email = String(rows[i][colEmail] || '').trim();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) continue;
@@ -1228,7 +1232,8 @@ async function nhapEmailGvcnTuFile(file){
       }
       if (colTen >= 0){
         const ten = chuanHoaTenGvcn(rows[i][colTen]);
-        if (ten) mapTen[ten] = email;
+        const phone2 = colPhone >= 0 ? String(rows[i][colPhone] || '').trim() : '';
+        if (ten){ mapTen[ten] = email; if (phone2) mapPhone[ten] = phone2; }
       }
     }
     // lưu email vào localStorage để không mất khi tải lại
@@ -1254,6 +1259,7 @@ async function nhapEmailGvcnTuFile(file){
       const lop = String(parts[0] || '').trim();
       const ten = String(parts[1] || '').trim();
       let email = parts[2] ? String(parts[2]).trim() : '';
+      let phone = parts[3] ? String(parts[3]).trim() : '';
       if (!email){
         if (mapLop[lop]) { email = mapLop[lop]; soThem++; }
         else {
@@ -1261,7 +1267,15 @@ async function nhapEmailGvcnTuFile(file){
           if (mapTen[tenKey]) { email = mapTen[tenKey]; soThem++; }
         }
       }
-      return email ? `${lop} | ${ten} | ${email}` : `${lop} - ${ten}`;
+      if (!phone){
+        if (mapPhone[lop]) phone = mapPhone[lop];
+        else {
+          const tenKey = chuanHoaTenGvcn(ten);
+          if (mapPhone[tenKey]) phone = mapPhone[tenKey];
+        }
+      }
+      const fields = [lop, ten, email, phone].filter(x => String(x).trim() !== '');
+      return email ? fields.join(' | ') : `${lop} - ${ten}`;
     });
     $('gvcnText').value = moi.join('\n');
     $('gvcnHelp').textContent = `Đã thêm email cho ${soThem} GVCN từ file toàn trường.`;
