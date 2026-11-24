@@ -448,7 +448,7 @@ async function taiDuLieu(){
     $('cGhiChu').value = d.meta.GHI_CHU || '';
     if (d.gvcnText !== undefined){
       const emailMap = JSON.parse(localStorage.getItem('ntb_gvcn_email') || '{}');
-      const lines = String(d.gvcnText || '').split(/\\r?\\n/).map(line => {
+      const lines = String(d.gvcnText || '').split(/\r?\n/).map(line => {
         if (!line.trim()) return '';
         const parts = line.split(/[-,;:]/);
         const lop = String(parts[0] || '').trim();
@@ -456,7 +456,7 @@ async function taiDuLieu(){
         const email = emailMap[lop];
         return email ? `${lop} | ${gv} | ${email}` : (gv ? `${lop} - ${gv}` : line.trim());
       });
-      const merged = lines.join('\\n');
+      const merged = lines.join('\n');
       $('gvcnText').value = merged;
       $('gvcnText').dataset.original = merged;
     }
@@ -639,13 +639,13 @@ async function docFileGvcn(file){
 }
 
 function lamSachGvcnText(text){
-  return String(text || '').split(/\\r?\\n/).map(line => {
+  return String(text || '').split(/\r?\n/).map(line => {
     if (!line.trim()) return '';
     const parts = line.indexOf('|') >= 0 ? line.split('|') : line.split(/[-,;:]/);
     const lop = String(parts[0] || '').trim();
     const gv = String(parts[1] || '').trim();
     return lop && gv ? (lop + ' - ' + gv) : line.trim();
-  }).filter(Boolean).join('\\n');
+  }).filter(Boolean).join('\n');
 }
 async function luuGvcn(){
   const text = $('gvcnText').value.trim();
@@ -1314,17 +1314,17 @@ function taoThongBaoText(nhom){
   const tenTruong = ($('cTenTruong') && $('cTenTruong').value) || 'Trường';
   const dong = Array.from(nhom).sort().map(k => {
     const p = k.split('|'); return `- ${p[0]}: ${p[1]}`;
-  }).join('\\n');
-  return `${tenTruong} — Thông báo cập nhật điểm\\n\\nHệ thống tra cứu điểm vừa được cập nhật cho:\\n${dong}\\n\\nVui lòng kiểm tra và thông báo cho học sinh.`;
+  }).join('\n');
+  return `${tenTruong} — Thông báo cập nhật điểm\n\nHệ thống tra cứu điểm vừa được cập nhật cho:\n${dong}\n\nVui lòng kiểm tra và thông báo cho học sinh.`;
 }
 function layEmailTheoLop(){
   const map = {};
-  String($('gvcnText').value || '').split(/\\r?\\n/).forEach(line => {
+  String($('gvcnText').value || '').split(/\r?\n/).forEach(line => {
     if (!line.trim()) return;
     const parts = line.indexOf('|') >= 0 ? line.split('|') : line.split(/[-,;:]/);
     const lop = String(parts[0] || '').trim();
     const email = parts.length >= 3 ? String(parts[2] || '').trim() : '';
-    if (lop && email && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) map[lop] = email;
+    if (lop && email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) map[lop] = email;
   });
   return map;
 }
@@ -1397,7 +1397,7 @@ async function demoApi(action, getParams, postData){
   if (action === 'backupDrive') return { ok:true, url:'#', name:'(Demo) backup' };
   if (action === 'restoreBackup') return { ok:true, msg:'(Demo) Đã khôi phục.' };
   if (action === 'backupJson') return { ok:true, data: { DIEM_TONG:[], HOSO:[] }, time: new Date().toLocaleString('vi-VN') };
-  if (action === 'exportCsv') return { ok:true, filename: ((getParams && getParams.tab) || 'data') + '.csv', csv: 'col1,col2\\n1,2' };
+  if (action === 'exportCsv') return { ok:true, filename: ((getParams && getParams.tab) || 'data') + '.csv', csv: 'col1,col2\n1,2' };
   if (action === 'auditLog') return { ok:true, rows: [ { thoiGian:'01/01/2026 00:00:00', hanhDong:'Demo', chiTiet:'Dữ liệu mẫu', soDong:0 } ] };
   if (action === 'gvcnVerify') return { ok:true, tongNhap:3, tongHienTai:3, khop:3, khac:[], thieu:[], duThua:[] };
   return { error:'Không hỗ trợ trong demo' };
